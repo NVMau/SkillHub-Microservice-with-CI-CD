@@ -1,0 +1,11 @@
+{
+  "namespace": "com.skillhub.assignment.avro",
+  "type": "record",
+  "name": "LectureDeletedEvent",
+  "fields": [
+    {"name": "id", "type": "string"},
+    {"name": "title", "type": "string"},
+    {"name": "description", "type": ["null", "string"], "default": null},
+    {"name": "courseId", "type": "string"}
+  ]
+}

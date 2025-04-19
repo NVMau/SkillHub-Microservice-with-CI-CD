@@ -1,0 +1,562 @@
+services:
+  # MongoDB cho các service khác nhau
+  mongodb_user:
+    image: mongo:7.0.5
+    container_name: mongodb_user
+    ports:
+      - "${MONGO_USER_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_USER_DATABASE}
+    command: ["--auth"]
+    volumes:
+      - ./data/mongodb_user:/data/db
+    networks:
+      - skillhub-network
+  mongodb_lecture:
+    image: mongo:7.0.5
+    container_name: mongodb_lecture
+    ports:
+      - "${MONGO_LECTURE_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_LECTURE_DATABASE}
+    volumes:
+      - ./data/mongodb_lecture:/data/db
+    networks:
+      - skillhub-network
+  mongodb_exam_results:
+    image: mongo:7.0.5
+    container_name: mongodb_exam_results
+    ports:
+      - "${MONGO_EXAM_RESULTS_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_EXAM_RESULTS_DATABASE}
+    volumes:
+      - ./data/mongodb_exam_results:/data/db
+    networks:
+      - skillhub-network
+
+  mongodb_ai:
+    image: mongo:7.0.5
+    container_name: mongodb_ai
+    ports:
+      - "${MONGO_AI_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_AI_DATABASE}
+    volumes:
+      - ./data/mongodb_ai:/data/db
+    networks:
+      - skillhub-network
+
+  mongodb_course:
+    image: mongo:7.0.5
+    container_name: mongodb_course
+    ports:
+      - "${MONGO_COURSE_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: yourpassword
+      MONGO_INITDB_DATABASE: ${MONGO_COURSE_DATABASE}
+    volumes:
+      - ./data/mongodb_course:/data/db
+    networks:
+      - skillhub-network
+  mongodb_blog:
+    image: mongo:7.0.5
+    container_name: mongodb_blog
+    ports:
+      - "${MONGO_BLOG_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_BLOG_DATABASE}
+    volumes:
+      - ./data/mongodb_blog:/data/db
+    networks:
+      - skillhub-network
+  mongodb_assignment:
+    image: mongo:7.0.5
+    container_name: mongodb_assignment
+    ports:
+      - "${MONGO_ASSIGNMENT_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_ASSIGNMENT_DATABASE}
+    volumes:
+      - ./data/mongodb_assignment:/data/db
+    networks:
+      - skillhub-network
+
+  mongodb_chat:
+    image: mongo:7.0.5
+    container_name: mongodb_chat
+    ports:
+      - "${MONGO_CHAT_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_CHAT_DATABASE}
+    volumes:
+      - ./data/mongodb_chat:/data/db
+    networks:
+      - skillhub-network
+  mysql:
+    image: mysql:8.3.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - skillhub-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "${ZOOKEEPER_PORT}:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_PORT}
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - skillhub-network
+
+  broker:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: broker
+    ports:
+      - "${KAFKA_BROKER_PORT}:9092"
+      - "${KAFKA_BROKER_INTERNAL_PORT}:29092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: ${KAFKA_BROKER_ID}
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:${ZOOKEEPER_PORT}'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:${KAFKA_BROKER_INTERNAL_PORT},PLAINTEXT_HOST://localhost:${KAFKA_BROKER_PORT}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+    networks:
+      - skillhub-network
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - broker
+    ports:
+      - "${SCHEMA_REGISTRY_PORT}:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:${KAFKA_BROKER_INTERNAL_PORT}'
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+    networks:
+      - skillhub-network
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "${KAFKA_UI_PORT}:8080"
+    depends_on:
+      - broker
+      - schema-registry
+    environment:
+      KAFKA_CLUSTERS_NAME: local
+      KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:${KAFKA_BROKER_INTERNAL_PORT}
+      KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8081
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - skillhub-network
+  keycloak-mysql:
+    container_name: keycloak-mysql
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - skillhub-network
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:25.0.0
+    command: [ "start-dev","--import-realm" ]
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: keycloak-mysql
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8180
+      KC_HOSTNAME: keycloak
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
+    ports:
+      - "8180:8180"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    depends_on:
+      - keycloak-mysql
+    networks:
+      - skillhub-network
+  loki:
+    image: grafana/loki:main
+    command: [ '-config.file=/etc/loki/local-config.yaml' ]
+    ports:
+      - '${LOKI_PORT}:3100'
+    networks:
+      - skillhub-network
+  prometheus:
+    image: prom/prometheus:v2.46.0
+    command:
+      - --enable-feature=exemplar-storage
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - '${PROMETHEUS_PORT}:9090'
+  tempo:
+    image: grafana/tempo:2.2.2
+    command: [ '-config.file=/etc/tempo.yaml' ]
+    volumes:
+      - ./docker/tempo/tempo.yml:/etc/tempo.yaml:ro
+      - ./docker/tempo/tempo-data:/tmp/tempo
+    ports:
+      - '${TEMPO_PORT}:3100'
+      - '${TEMPO_ZIPKIN_PORT}:9411'
+    networks:
+      - skillhub-network
+  grafana:
+    image: grafana/grafana:10.1.0
+    volumes:
+      - ./docker/grafana:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    ports:
+      - '${GRAFANA_PORT}:3000'
+
+
+  profile-service:
+    image: profile-service:latest
+    container_name: profile-service
+    ports:
+      - "${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - PROFILE_SERVICE_PORT=${PROFILE_SERVICE_PORT}
+      # MongoDB config
+      - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
+      - MONGO_USER_DATABASE=${MONGO_USER_DATABASE}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      # Keycloak config
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI}
+      #AWS config
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET_PROFILE=${AWS_S3_BUCKET_PROFILE}
+      # Kafka config
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+
+      # Other services URLs
+      - ENROLLMENT_SERVICE_URL=${ENROLLMENT_SERVICE_URL}
+      - COURSE_SERVICE_URL=${COURSE_SERVICE_URL}
+      - VNPAY_RETURN_URL=${VNPAY_RETURN_URL}
+    depends_on:
+      - mongodb_user
+      - keycloak
+      - broker
+      - schema-registry
+      - loki
+    networks:
+      - skillhub-network
+
+  api-gateway:
+    image: api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    environment:
+      - API_GATEWAY_PORT=${API_GATEWAY_PORT}
+      - SPRING_PROFILES_ACTIVE=dev
+      # Keycloak config
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI}
+
+      # Other services URLs
+      - ENROLLMENT_SERVICE_URL=${ENROLLMENT_SERVICE_URL}
+      - COURSE_SERVICE_URL=${COURSE_SERVICE_URL}
+      - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
+      - LECTURE_SERVICE_URL=${LECTURE_SERVICE_URL}
+      - BLOG_SERVICE_URL=${BLOG_SERVICE_URL}
+      - ASSIGNMENT_SERVICE_URL=${ASSIGNMENT_SERVICE_URL}
+      - CHAT_SERVICE_URL=${CHAT_SERVICE_URL}
+      - AI_SERVICE_URL=${AI_SERVICE_URL}
+      - EXAM_RESULTS_SERVICE_URL=${EXAM_RESULTS_SERVICE_URL}
+    depends_on:
+      - keycloak
+      # - enrollment-service
+      - course-service
+      - profile-service
+      - lecture-service
+      # - blog-service
+      # - assignment-service
+      # - chat-service
+      # - ai-service
+      # - exam-results-service
+    networks:
+      - skillhub-network
+  course-service:
+    image: course-service:latest
+    container_name: course-service
+    ports:
+      - "${COURSE_SERVICE_PORT}:${COURSE_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - COURSE_SERVICE_PORT=${COURSE_SERVICE_PORT}
+      # MongoDB config
+      - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
+      - MONGO_COURSE_DATABASE=${MONGO_COURSE_DATABASE}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      # Keycloak config
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      #AWS config
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET_COURSE=${AWS_S3_BUCKET_COURSE}
+      # Kafka config
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Other services URLs
+      - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
+      - LECTURE_SERVICE_URL=${LECTURE_SERVICE_URL}
+      - ASSIGNMENT_SERVICE_URL=${ASSIGNMENT_SERVICE_URL}
+      - EXAM_RESULTS_SERVICE_URL=${EXAM_RESULTS_SERVICE_URL}
+      - ENROLLMENT_SERVICE_URL=${ENROLLMENT_SERVICE_URL}
+    depends_on:
+      - keycloak
+      - profile-service
+      - mongodb_course
+    networks:
+      - skillhub-network
+  lecture-service:
+    image: lecture-service:latest
+    container_name: lecture-service
+    ports:
+      - "${LECTURE_SERVICE_PORT}:${LECTURE_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - LECTURE_SERVICE_PORT=${LECTURE_SERVICE_PORT}
+      # MongoDB config
+      - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
+      - MONGO_LECTURE_DATABASE=${MONGO_LECTURE_DATABASE}
+      - SPRING_DATA_MONGODB_USERNAME=${MONGO_ROOT_USERNAME}
+      - SPRING_DATA_MONGODB_PASSWORD=${MONGO_ROOT_PASSWORD}
+      # Keycloak config
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      # AWS config for video/file storage
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET_LECTURE=${AWS_S3_BUCKET_LECTURE}
+      # Kafka config
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+    depends_on:
+      - mongodb_lecture
+      - keycloak
+      - broker
+      - schema-registry
+      - loki
+    networks:
+      - skillhub-network
+
+  assignment-service:
+    image: assignment-service:latest
+    container_name: assignment-service
+    ports:
+      - "${ASSIGNMENT_SERVICE_PORT}:${ASSIGNMENT_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - ASSIGNMENT_SERVICE_PORT=${ASSIGNMENT_SERVICE_PORT}
+      # MongoDB config
+      - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
+      - MONGO_ASSIGNMENT_DATABASE=${MONGO_ASSIGNMENT_DATABASE}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      # Keycloak config
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      # Kafka config
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+    depends_on:
+      - mongodb_assignment
+      - keycloak
+      - broker
+      - schema-registry
+    networks:
+      - skillhub-network
+  blog-service:
+    image: blog-service:latest
+    container_name: blog-service
+    ports:
+      - "${BLOG_SERVICE_PORT}:${BLOG_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - BLOG_SERVICE_PORT=${BLOG_SERVICE_PORT}
+      # MongoDB config
+      - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
+      - MONGO_BLOG_DATABASE=${MONGO_BLOG_DATABASE}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      # Keycloak config
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      # Kafka config
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Other services URLs
+      - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
+      #AWS config
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET_BLOG=${AWS_S3_BUCKET_BLOG}
+    depends_on:
+      - mongodb_blog
+      - keycloak
+      - broker
+      - schema-registry
+    networks:
+      - skillhub-network
+  chat-service:
+    image: chat-service:latest
+    container_name: chat-service
+    ports:
+      - "${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - CHAT_SERVICE_PORT=${CHAT_SERVICE_PORT}
+      # MongoDB config
+      - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
+      - MONGO_CHAT_DATABASE=${MONGO_CHAT_DATABASE}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      # Keycloak config
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+    depends_on:
+      - mongodb_chat
+      - keycloak
+    networks:
+      - skillhub-network
+  exam-result-service:
+    image: exam-result-service:latest
+    container_name: exam-result-service
+    ports:
+      - "${EXAM_SERVICE_PORT}:${EXAM_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - EXAM_SERVICE_PORT=${EXAM_SERVICE_PORT}
+      # MongoDB config
+      - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
+      - MONGO_EXAM_RESULTS_DATABASE=${MONGO_EXAM_RESULTS_DATABASE}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      # Keycloak config
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      # Kafka config
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Other services URLs
+      - ASSIGNMENT_SERVICE_URL=${ASSIGNMENT_SERVICE_URL}
+    depends_on:
+      - mongodb_exam_results
+      - keycloak
+    networks:
+      - skillhub-network
+  notification-service:
+    image: notification-service:latest
+    container_name: notification-service
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT}:${NOTIFICATION_SERVICE_PORT}"
+    environment:
+      - NOTIFICATION_SERVICE_PORT=${NOTIFICATION_SERVICE_PORT}
+      - SPRING_PROFILES_ACTIVE=dev
+      - MAILTRAP_MAIL_HOST=${MAILTRAP_MAIL_HOST}
+      - MAILTRAP_MAIL_PORT=${MAILTRAP_MAIL_PORT}
+      - MAILTRAP_MAIL_USERNAME=${MAILTRAP_MAIL_USERNAME}
+      - MAILTRAP_MAIL_PASSWORD=${MAILTRAP_MAIL_PASSWORD}
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+    depends_on:
+      - keycloak
+      - broker
+      - schema-registry
+    networks:
+      - skillhub-network
+
+  enrollment-service:
+    image: enrollment-service:latest
+    container_name: enrollment-service
+    ports:
+      - "${ENROLLMENT_SERVICE_PORT}:${ENROLLMENT_SERVICE_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - ENROLLMENT_SERVICE_PORT=${ENROLLMENT_SERVICE_PORT}
+      # MySQL config
+      - MYSQL_DATABASE_URL=${MYSQL_DATABASE_URL}
+      - MYSQL_DATABASE_USERNAME=${MYSQL_DATABASE_USERNAME}
+      - MYSQL_DATABASE_PASSWORD=${MYSQL_DATABASE_PASSWORD}
+      # Keycloak config
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      # Kafka config
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Other services URLs
+      - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
+      - COURSE_SERVICE_URL=${COURSE_SERVICE_URL}
+    depends_on:
+      - mysql
+      - keycloak
+      - broker
+      - schema-registry
+    networks:
+      - skillhub-network
+    
+volumes:
+  mysql_data:
+    driver: local
+  keycloak_data:
+    driver: local
+
+networks:
+  skillhub-network:
+    driver: bridge
