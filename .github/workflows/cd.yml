@@ -1,0 +1,69 @@
+# name: CD Pipeline
+
+# on:
+#   push:
+#     branches: [ "main" ]
+#   workflow_run:
+#     workflows: ["CI Pipeline"]
+#     types:
+#       - completed
+#     branches: [ "main" ]
+
+# env:
+#   AWS_REGION: ${{ secrets.AWS_REGION }}
+#   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+#   ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+#   ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+#   ECS_TASK_DEFINITION: ${{ secrets.ECS_TASK_DEFINITION }}
+
+# jobs:
+#   deploy:
+#     name: Deploy to AWS
+#     runs-on: ubuntu-latest
+#     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v3
+
+#     - name: Configure AWS credentials
+#       uses: aws-actions/configure-aws-credentials@v1
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: ${{ env.AWS_REGION }}
+
+#     - name: Login to Amazon ECR
+#       id: login-ecr
+#       uses: aws-actions/amazon-ecr-login@v1
+
+#     - name: Build and Push Docker Images
+#       env:
+#         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#         IMAGE_TAG: ${{ github.sha }}
+#       run: |
+#         # Build and push Course Service
+#         cd course-service
+#         docker build -t $ECR_REGISTRY/course-service:$IMAGE_TAG .
+#         docker push $ECR_REGISTRY/course-service:$IMAGE_TAG
+        
+#         # Build and push Notification Service
+#         cd ../notification-service
+#         docker build -t $ECR_REGISTRY/notification-service:$IMAGE_TAG .
+#         docker push $ECR_REGISTRY/notification-service:$IMAGE_TAG
+        
+#         # Build and push Assignment Service
+#         cd ../assignment-service
+#         docker build -t $ECR_REGISTRY/assignment-service:$IMAGE_TAG .
+#         docker push $ECR_REGISTRY/assignment-service:$IMAGE_TAG
+
+#     - name: Update ECS services
+#       run: |
+#         # Update Course Service
+#         aws ecs update-service --cluster $ECS_CLUSTER --service course-service --force-new-deployment
+        
+#         # Update Notification Service
+#         aws ecs update-service --cluster $ECS_CLUSTER --service notification-service --force-new-deployment
+        
+#         # Update Assignment Service
+#         aws ecs update-service --cluster $ECS_CLUSTER --service assignment-service --force-new-deployment 
