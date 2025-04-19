@@ -1,0 +1,27 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "feature/*" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build Docker Images
+      run: |
+        # Build Course Service
+        cd course-service
+        docker build -t course-service:latest .
+        
+        
+        # Verify images
+        docker images 
