@@ -26,6 +26,7 @@ replay_pid*
 # Data directory
 /data/
 /mysql/
+/skillhub-infrastructure/
 
 # Docker directory
 /docker/
