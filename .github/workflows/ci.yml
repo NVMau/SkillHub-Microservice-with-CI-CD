@@ -77,12 +77,6 @@ jobs:
         docker tag chat-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/chat-service:latest
         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/chat-service:latest
 
-    - name: Build & Push AI Service
-      run: |
-        cd ai-service
-        docker build -t ai-service:latest .
-        docker tag ai-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/ai-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/ai-service:latest
 
     - name: Build & Push Profile Service
       run: |
