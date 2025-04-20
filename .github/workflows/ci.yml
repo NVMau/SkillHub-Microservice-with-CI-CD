@@ -30,7 +30,7 @@ jobs:
 
     - name: Build & Push API Gateway
       run: |
-        cd api-gateway
+        cd api-gateway/api-gateway
         docker build -t api-gateway:latest .
         docker tag api-gateway:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/api-gateway:latest
         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/api-gateway:latest
