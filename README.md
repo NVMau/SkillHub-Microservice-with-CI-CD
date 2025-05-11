@@ -1,84 +1,126 @@
-# SkillHub Microservice
+# SkillHub - Microservices Learning Platform
 
-Hệ thống quản lý khóa học trực tuyến sử dụng kiến trúc microservice.
+SkillHub is a modern, scalable learning platform built using microservices architecture. The platform provides a comprehensive solution for online education, including course management, user profiles, assignments, exams, and real-time communication features.
 
-## Cấu trúc Project
+## 🚀 Features
 
-```
-skillhub-microservice/
-├── api-gateway/          # API Gateway Service
-├── user-service/         # User Management Service
-├── course-service/       # Course Management Service
-├── lecture-service/      # Lecture Management Service
-├── exam-service/         # Exam Management Service
-├── blog-service/         # Blog Service
-├── assignment-service/   # Assignment Service
-├── chat-service/         # Chat Service
-├── ai-service/          # AI Service
-├── notification-service/ # Notification Service
-├── enrollment-service/   # Enrollment Service
-├── profile-service/      # Profile Service
-├── common/              # Shared Libraries
-└── docker/              # Docker Configurations
-```
+- **Course Management**: Create, update, and manage courses with rich content
+- **User Profiles**: Comprehensive user profiles with learning progress tracking
+- **Assignment System**: Create and submit assignments with automated grading
+- **Exam System**: Conduct online exams with result tracking
+- **Real-time Chat**: Interactive communication between students and instructors
+- **AI Integration**: Smart learning recommendations and content analysis
+- **Blog System**: Educational content sharing and community engagement
+- **Notification System**: Real-time updates and alerts
+- **Enrollment Management**: Course registration and access control
 
-## Công nghệ sử dụng
+## 🏗 Architecture
 
-- Java 17
-- Spring Boot
-- Spring Cloud
-- Docker
-- MySQL
-- MongoDB
-- Redis
-- AWS Services
+The platform is built using a microservices architecture with the following components:
 
-## Yêu cầu hệ thống
+- **API Gateway**: Single entry point for all client requests
+- **Service Registry**: Service discovery and registration
+- **Course Service**: Course management and content delivery
+- **Profile Service**: User profile management
+- **Assignment Service**: Assignment creation and submission
+- **Exam Service**: Exam management and results
+- **Chat Service**: Real-time messaging
+- **AI Service**: Intelligent learning features
+- **Blog Service**: Content management
+- **Notification Service**: Event notifications
+- **Enrollment Service**: Course registration
 
-- JDK 21
+## 🛠 Technology Stack
+
+- **Backend**: Spring Boot, Spring Cloud
+- **Database**: MongoDB, MySQL
+- **Message Broker**: Apache Kafka
+- **Service Discovery**: Eureka
+- **API Gateway**: Spring Cloud Gateway
+- **Containerization**: Docker
+- **CI/CD**: GitHub Actions
+- **Monitoring**: Prometheus, Grafana
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Java 17 or higher
+- Docker and Docker Compose
 - Maven
-- Docker
-- Docker Compose
+- MongoDB
+- MySQL
 
-## Cài đặt và Chạy
+### Installation
 
-1. Clone repository:
+1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/skillhub-microservice.git
+git clone https://github.com/yourusername/SkillHub-Microservice-with-CI-CD.git
+cd SkillHub-Microservice-with-CI-CD
 ```
 
-2. Cấu hình môi trường:
+2. Build all services:
 ```bash
-cp .env.example .env
-# Chỉnh sửa các biến môi trường trong .env
+./build-services.sh
 ```
 
-3. Build và chạy:
+3. Start the services using Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-## CI/CD Pipeline
+4. Access the application:
+- API Gateway: http://localhost:8080
+- Service Registry: http://localhost:8761
+- Swagger Documentation: http://localhost:8080/swagger-ui.html
 
-Project sử dụng GitHub Actions cho CI/CD:
-- Build và test tự động
-- Push Docker images lên AWS ECR
-- Deploy lên AWS ECS
+## 📚 API Documentation
 
-## Monitoring
+Each service provides its own Swagger documentation. Access them through the API Gateway:
 
-- Prometheus
-- Grafana
-- AWS CloudWatch
+- Course Service: `/api/courses/swagger-ui.html`
+- Profile Service: `/api/profiles/swagger-ui.html`
+- Assignment Service: `/api/assignments/swagger-ui.html`
+- Exam Service: `/api/exams/swagger-ui.html`
 
-## Contributing
+## 🔄 CI/CD Pipeline
 
-1. Fork repository
-2. Tạo feature branch
-3. Commit changes
-4. Push to branch
-5. Tạo Pull Request
+The project uses GitHub Actions for continuous integration and deployment:
 
-## License
+1. **Build**: Compiles and tests all services
+2. **Test**: Runs unit and integration tests
+3. **Docker Build**: Creates Docker images
+4. **Deploy**: Deploys to the target environment
 
-MIT License 
+## 📦 Docker Images
+
+All services are containerized using Docker. Images are available on Docker Hub:
+
+```bash
+docker pull skillhub/course-service
+docker pull skillhub/profile-service
+docker pull skillhub/assignment-service
+# ... other services
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Authors
+
+- Your Name - Initial work
+
+## 🙏 Acknowledgments
+
+- Spring Boot Team
+- Docker Team
+- All contributors and supporters 
