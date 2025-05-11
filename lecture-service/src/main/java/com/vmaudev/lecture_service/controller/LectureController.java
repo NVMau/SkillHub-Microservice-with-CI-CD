@@ -39,6 +39,15 @@ public class LectureController {
 
         return ResponseEntity.ok(lectureService.createLecture(lecture, file, videos));
     }
+    @GetMapping("/{lectureId}")
+    public ResponseEntity<Lecture> getLectureById(@PathVariable String lectureId) {
+        try {
+            Lecture lecture = lectureService.getLectureById(lectureId);
+            return ResponseEntity.ok(lecture);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     @DeleteMapping("/{lectureId}")
     public ResponseEntity<Void> deleteLecture(@PathVariable String lectureId) {

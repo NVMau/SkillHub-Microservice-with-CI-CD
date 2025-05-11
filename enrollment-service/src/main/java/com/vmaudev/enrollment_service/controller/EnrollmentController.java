@@ -3,7 +3,9 @@ package com.vmaudev.enrollment_service.controller;
 import com.vmaudev.enrollment_service.dto.EnrollmentRequest;
 import com.vmaudev.enrollment_service.dto.CourseEnrollmentResponse;
 import com.vmaudev.enrollment_service.model.Enrollment;
+import com.vmaudev.enrollment_service.model.Rating;
 import com.vmaudev.enrollment_service.service.EnrollmentService;
+import com.vmaudev.enrollment_service.service.RatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,7 @@ import java.util.Optional;
 public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
+    private final RatingService ratingService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -90,5 +93,31 @@ public class EnrollmentController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+  
+
+    // API đánh giá khóa học
+    // Đánh giá khóa học dựa trên studentId và courseId
+    @PostMapping("ratings/rate")
+    public ResponseEntity<Rating> rateCourse(@RequestBody Rating rating) {
+        try {
+            Rating savedRating = ratingService.rateCourse(rating.getStudentId(), rating.getCourseId(), rating);
+            return ResponseEntity.ok(savedRating);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+
+    // API lấy danh sách đánh giá cho khóa học
+    @GetMapping("ratings/courses/{courseId}/ratings")
+    public ResponseEntity<List<Rating>> getRatingsByCourse(@PathVariable String courseId) {
+        return ResponseEntity.ok(ratingService.getRatingsByCourse(courseId));
+    }
+
+    @GetMapping("ratings/course/{courseId}/student/{studentId}")
+    public ResponseEntity<Rating> getRatingByCourseIdAndStudentId(@PathVariable String courseId,@PathVariable String studentId) {
+        return ResponseEntity.ok(ratingService.getRatingByCourseIdAndStudentId(courseId,studentId));
     }
 }

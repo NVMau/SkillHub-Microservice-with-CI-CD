@@ -59,6 +59,7 @@ public class EnrollmentService {
 
         // Lấy thông tin người dùng từ Profile Service
         ProfileResponse profile = profileClient.getUserById(enrollmentRequest.getStudentId(), token);
+
         CourseResponse course = courseClient.getCourseById(enrollmentRequest.getCourseId(),token);
         // Kiểm tra xem học sinh có đủ tiền để đăng ký khóa học hay không
         BigDecimal coursePrice = course.getPrice(); // Giá của khóa học

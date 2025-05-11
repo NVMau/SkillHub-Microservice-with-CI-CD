@@ -1,12 +1,10 @@
 package com.vmaudev.course_service.controller;
-import com.vmaudev.course_service.dto.CourseRequest;
-import com.vmaudev.course_service.dto.CourseResponse;
-import com.vmaudev.course_service.dto.FeaturedInstructorResponse;
-import com.vmaudev.course_service.dto.StudentLearningStatisticsResponse;
+import com.vmaudev.course_service.dto.*;
+import com.vmaudev.course_service.dto.response.LessonReponse;
 import com.vmaudev.course_service.model.Course;
 import com.vmaudev.course_service.service.CourseService;
+import com.vmaudev.course_service.service.LessonCompletionService;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,12 +14,15 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.apache.kafka.common.requests.DeleteAclsResponse.log;
+
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
 public class CourseController {
 
     private final CourseService courseService;
+    private final LessonCompletionService lessonCompletionService;
 
     @PostMapping(consumes = {"multipart/form-data"})
     @ResponseStatus(HttpStatus.CREATED)
@@ -90,6 +91,59 @@ public class CourseController {
     @GetMapping("/featured-instructors")
     public ResponseEntity<List<FeaturedInstructorResponse>> getFeaturedInstructors() {
         return ResponseEntity.ok(courseService.getFeaturedInstructors());
+    }
+
+    @PostMapping("/lesson-completion/{lessonId}/complete")
+    public ResponseEntity<Void> markLessonAsCompleted(
+            @PathVariable String lessonId,
+            @RequestBody LessonCompletionRequest request) {
+        log.info("Nhận request đánh dấu bài học {} đã hoàn thành", lessonId);
+
+        lessonCompletionService.markLessonAsCompleted(
+                request.getUserId(),
+                request.getCourseId(),
+                lessonId,
+                request.getCompletionType());
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/lesson-completion/{lessonId}/status")
+    public ResponseEntity<Boolean> getLessonCompletionStatus(
+            @PathVariable String lessonId,
+            @RequestParam String userId) {
+        boolean isCompleted = lessonCompletionService.isLessonCompleted(userId, lessonId);
+        return ResponseEntity.ok(isCompleted);
+    }
+
+    @GetMapping("/lesson-completion/course/{courseId}/completed-count")
+    public ResponseEntity<Integer> getCompletedLessonsCount(
+            @PathVariable String courseId,
+            @RequestParam String userId) {
+        int count = lessonCompletionService.getCompletedLessonsCount(userId, courseId);
+        return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/lesson-completion/course/{courseId}/progress")
+    public ResponseEntity<LearningProgressResponse> getLearningProgress(
+            @PathVariable String courseId,
+            @RequestParam String userId) {
+        log.info("Getting learning progress for user {} in course {}", userId, courseId);
+        return ResponseEntity.ok(lessonCompletionService.getLearningProgress(userId, courseId));
+    }
+
+    @GetMapping("/lesson-completion/course/{courseId}/lessons")
+    public ResponseEntity<List<LessonReponse>> getLessonsByCourseId(
+            @PathVariable String courseId) {
+        log.info("Getting lessons for course {}", courseId);
+        return ResponseEntity.ok(lessonCompletionService.getLessonsByCourseId(courseId));
+    }
+
+    @GetMapping("/lesson-completion/{courseId}/students-progress")
+    public ResponseEntity<List<StudentLearningStatisticsResponse>> getStudentsProgress(
+            @PathVariable String courseId
+    ) {
+        return ResponseEntity.ok(lessonCompletionService.getStudentsProgress(courseId));
     }
 
 

@@ -1,100 +1,100 @@
-name: CI Pipeline
+# name: CI Pipeline
 
-on:
-  push:
-    branches: [ "main", "feature/*" ]
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+# on:
+#   push:
+#     branches: [ "main", "feature/*" ]
+#   pull_request:
+#     branches: [ "main" ]
+#   workflow_dispatch:
 
-jobs:
-  build:
-    name: Build Docker Images
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     name: Build Docker Images
+#     runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v3
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-southeast-1
+#     - name: Configure AWS credentials
+#       uses: aws-actions/configure-aws-credentials@v2
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: ap-southeast-1
         
-    - name: Log in to Amazon ECR
-      run: |
-        aws ecr get-login-password --region ap-southeast-1 | \
-        docker login --username AWS --password-stdin 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com
+#     - name: Log in to Amazon ECR
+#       run: |
+#         aws ecr get-login-password --region ap-southeast-1 | \
+#         docker login --username AWS --password-stdin 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com
 
-    - name: Build & Push API Gateway
-      run: |
-        cd api-gateway/api-gateway
-        docker build -t api-gateway:latest .
-        docker tag api-gateway:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/api-gateway:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/api-gateway:latest
+#     - name: Build & Push API Gateway
+#       run: |
+#         cd api-gateway/api-gateway
+#         docker build -t api-gateway:latest .
+#         docker tag api-gateway:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/api-gateway:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/api-gateway:latest
 
-    - name: Build & Push Course Service
-      run: |
-        cd course-service
-        docker build -t course-service:latest .
-        docker tag course-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/course-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/course-service:latest
+#     - name: Build & Push Course Service
+#       run: |
+#         cd course-service
+#         docker build -t course-service:latest .
+#         docker tag course-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/course-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/course-service:latest
 
-    - name: Build & Push Lecture Service
-      run: |
-        cd lecture-service
-        docker build -t lecture-service:latest .
-        docker tag lecture-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/lecture-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/lecture-service:latest
+#     - name: Build & Push Lecture Service
+#       run: |
+#         cd lecture-service
+#         docker build -t lecture-service:latest .
+#         docker tag lecture-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/lecture-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/lecture-service:latest
 
-    - name: Build & Push Assignment Service
-      run: |
-        cd assignment-service
-        docker build -t assignment-service:latest .
-        docker tag assignment-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/assignment-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/assignment-service:latest
+#     - name: Build & Push Assignment Service
+#       run: |
+#         cd assignment-service
+#         docker build -t assignment-service:latest .
+#         docker tag assignment-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/assignment-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/assignment-service:latest
 
-    - name: Build & Push Exam Service
-      run: |
-        cd exam_result_service
-        docker build -t exam-service:latest .
-        docker tag exam-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/exam-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/exam-service:latest
+#     - name: Build & Push Exam Service
+#       run: |
+#         cd exam_result_service
+#         docker build -t exam-service:latest .
+#         docker tag exam-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/exam-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/exam-service:latest
 
-    - name: Build & Push Blog Service
-      run: |
-        cd blog-service
-        docker build -t blog-service:latest .
-        docker tag blog-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/blog-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/blog-service:latest
+#     - name: Build & Push Blog Service
+#       run: |
+#         cd blog-service
+#         docker build -t blog-service:latest .
+#         docker tag blog-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/blog-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/blog-service:latest
 
-    - name: Build & Push Chat Service
-      run: |
-        cd chat-service
-        docker build -t chat-service:latest .
-        docker tag chat-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/chat-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/chat-service:latest
+#     - name: Build & Push Chat Service
+#       run: |
+#         cd chat-service
+#         docker build -t chat-service:latest .
+#         docker tag chat-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/chat-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/chat-service:latest
 
 
-    - name: Build & Push Profile Service
-      run: |
-        cd profile-service
-        docker build -t profile-service:latest .
-        docker tag profile-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/profile-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/profile-service:latest
+#     - name: Build & Push Profile Service
+#       run: |
+#         cd profile-service
+#         docker build -t profile-service:latest .
+#         docker tag profile-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/profile-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/profile-service:latest
 
-    - name: Build & Push Notification Service
-      run: |
-        cd notification-service
-        docker build -t notification-service:latest .
-        docker tag notification-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/notification-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/notification-service:latest
+#     - name: Build & Push Notification Service
+#       run: |
+#         cd notification-service
+#         docker build -t notification-service:latest .
+#         docker tag notification-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/notification-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/notification-service:latest
 
-    - name: Build & Push Enrollment Service
-      run: |
-        cd enrollment-service
-        docker build -t enrollment-service:latest .
-        docker tag enrollment-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/enrollment-service:latest
-        docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/enrollment-service:latest
+#     - name: Build & Push Enrollment Service
+#       run: |
+#         cd enrollment-service
+#         docker build -t enrollment-service:latest .
+#         docker tag enrollment-service:latest 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/enrollment-service:latest
+#         docker push 116981768488.dkr.ecr.ap-southeast-1.amazonaws.com/skillhub/enrollment-service:latest

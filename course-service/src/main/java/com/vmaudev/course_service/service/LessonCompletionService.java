@@ -25,8 +25,6 @@ public class LessonCompletionService {
     private final AssignmentClient assignmentClient;
     private final EnrollementClient enrollementClient;
     private  final ProfileClient profileClient;
-
-
     private final ExamResultClient examResultClient;
 
     public void markLessonAsCompleted(String userId, String courseId, String lessonId, String completionType) {
@@ -95,7 +93,8 @@ public class LessonCompletionService {
             // Lấy kết quả làm bài cho từng bài tập
             for (AssignmentResponse assignment : assignments) {
                 try {
-                    log.info("Getting exam result for assignment {} and user {}", assignment.getId(), userId);
+                    // log.info("Getting exam result for assignment {} and user {} with token: {}", assignment.getId(), userId, token);
+                    
                     ExamResultResponse result = examResultClient.getExamResultByUserIdAndAssignmentId(
                         assignment.getId(),
                         userId,
@@ -103,11 +102,14 @@ public class LessonCompletionService {
                     );
                     
                     if (result != null) {
-                        log.info("result: {}", result);
+                        // log.info("Exam result found: {}", result);
                         completedAssignments++;
+                    } else {
+                        // log.warn("No exam result found for assignment {} and user {}", assignment.getId(), userId);
                     }
                 } catch (Exception e) {
-                    log.warn("No exam result found for assignment {} and user {}", assignment.getId(), userId);
+                    log.error("Error getting exam result for assignment {} and user {}: {}", 
+                        assignment.getId(), userId, e.getMessage(), e);
                 }
             }
         }
@@ -177,7 +179,6 @@ public class LessonCompletionService {
     public List<StudentLearningStatisticsResponse> getStudentsProgress(String courseId) {
         String token = getTokenFromSecurityContext();
 
-        // 1. Lấy danh sách học sinh đã enroll khóa học
         List<EnrollmentReponse> enrolledStudents = enrollementClient.getStudentsByCourseId(courseId, token);
 
 

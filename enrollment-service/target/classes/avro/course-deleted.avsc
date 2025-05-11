@@ -1,8 +1,0 @@
-{
-  "type": "record",
-  "name": "CourseDeleteEvent",
-  "namespace": "com.vmaudev.course_service.event",
-  "fields": [
-    { "name": "courseId", "type": "string" }
-  ]
-}

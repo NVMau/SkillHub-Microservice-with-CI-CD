@@ -55,7 +55,7 @@ public class ProfileService {
     @Value("${idb.client_secret}")
     String clientSecret;
 
-    @Value("${KEYCLOAK_URL}")
+    @Value("${idb.url}")
     String keycloakUrl;
 
     public Profile createProfile(ProfileRegister profileRegister) {
@@ -230,8 +230,7 @@ public class ProfileService {
 
     public void deleteUserFromKeycloak(String userId) {
         // URL để gọi API xóa người dùng từ Keycloak
-        String url = "${KEYCLOAK_URL}/admin/realms/vmaudev/users/" + userId;
-
+        String url = keycloakUrl + "/admin/realms/vmaudev/users/" + userId;
         // Lấy token từ client credentials
         var token = indentityClient.exchangeToken(TokenExchangeParam.builder()
                 .grant_type("client_credentials")
@@ -275,21 +274,21 @@ public class ProfileService {
 
 
     public void deleteUserFromSystem(String profileId) {
-//        Profile existingProfile = profileRepository.findByProfileId(profileId)
-//                .orElseThrow(() -> new RuntimeException("User not found with userId: " + profileId));
-//        // Xóa user từ Keycloak
-//        deleteUserFromKeycloak(existingProfile.getUserId());
-//
-//        // Gửi sự kiện xóa user lên Kafka
-//        ProfileDeleteEvent profileDeleteEvent = new ProfileDeleteEvent(profileId);
-//        profileDeleteEvent.setProfileId(profileId);
-//        log.info("Start -Sending ProfileDeleteEvent {} to Kafka topic user-deleted ",profileDeleteEvent);
-//        kafkaTemplateDelete.send("user-deleted", profileDeleteEvent);
-//        log.info("End -Sending ProfileDeleteEvent {} to Kafka topic user-deleted",profileDeleteEvent);
-//
-//        // Xóa dữ liệu từ MongoDB
-//        profileRepository.deleteByProfileId(profileId);
-//        log.info("Profile with profileId {} has been deleted from MongoDB", profileId);
+        Profile existingProfile = profileRepository.findByProfileId(profileId)
+                .orElseThrow(() -> new RuntimeException("User not found with userId: " + profileId));
+      // Xóa user từ Keycloak
+        deleteUserFromKeycloak(existingProfile.getUserId());
+
+        // Gửi sự kiện xóa user lên Kafka
+        ProfileDeleteEvent profileDeleteEvent = new ProfileDeleteEvent(profileId);
+        profileDeleteEvent.setProfileId(profileId);
+        log.info("Start -Sending ProfileDeleteEvent {} to Kafka topic user-deleted ",profileDeleteEvent);
+     kafkaTemplateDelete.send("user-deleted", profileDeleteEvent);
+       log.info("End -Sending ProfileDeleteEvent {} to Kafka topic user-deleted",profileDeleteEvent);
+
+        // Xóa dữ liệu từ MongoDB
+      profileRepository.deleteByProfileId(profileId);
+       log.info("Profile with profileId {} has been deleted from MongoDB", profileId);
     }
 
     public Map<String, Long> getUserCountByRoles() {

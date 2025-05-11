@@ -84,8 +84,12 @@ public class LectureService {
             log.info("Không có bản ghi nào liên quan đến courseId này.");
         }
     }
+    
 
-
+    public Lecture getLectureById(String lectureId){
+        return lectureRepository.findById(lectureId)
+        .orElseThrow(() -> new RuntimeException("Lecture not found"));
+    }
 
 
     public void deleteLecture(String lectureId) {

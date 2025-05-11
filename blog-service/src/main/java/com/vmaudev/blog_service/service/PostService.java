@@ -6,6 +6,7 @@ import com.vmaudev.blog_service.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vmaudev.blog_service.repository.CommentRepository;
 import com.vmaudev.blog_service.repository.InteractionRepository;
+import com.vmaudev.blog_service.dto.PostStatsResponse;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,5 +72,23 @@ public class PostService {
 
         postRepository.deleteById(postId);
 
+    }
+
+    // Get post statistics (like and comment counts)
+    public PostStatsResponse getPostStats(String postId) {
+        PostStatsResponse stats = new PostStatsResponse();
+        stats.setPostId(postId);
+        
+        // Count likes (interactions with type "like")
+        long likeCount = interactionRepository.findByPostId(postId).stream()
+            .filter(interaction -> "like".equals(interaction.getInteractionType()))
+            .count();
+        stats.setLikeCount(likeCount);
+        
+        // Count comments
+        long commentCount = commentRepository.findByPostId(postId).size();
+        stats.setCommentCount(commentCount);
+        
+        return stats;
     }
 }

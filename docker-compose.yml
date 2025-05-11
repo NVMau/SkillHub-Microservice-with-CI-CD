@@ -1,118 +1,26 @@
 services:
-  # MongoDB cho các service khác nhau
-  mongodb_user:
+  # Single MongoDB for all services
+  mongodb:
     image: mongo:7.0.5
-    container_name: mongodb_user
+    container_name: mongodb
     ports:
-      - "${MONGO_USER_PORT}:27017"
+      - "${MONGO_PORT:-27020}:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_USER_DATABASE}
-    command: ["--auth"]
+      TZ: Asia/Ho_Chi_Minh
     volumes:
-      - ./data/mongodb_user:/data/db
-    networks:
-      - skillhub-network
-  mongodb_lecture:
-    image: mongo:7.0.5
-    container_name: mongodb_lecture
-    ports:
-      - "${MONGO_LECTURE_PORT}:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_LECTURE_DATABASE}
-    volumes:
-      - ./data/mongodb_lecture:/data/db
-    networks:
-      - skillhub-network
-  mongodb_exam_results:
-    image: mongo:7.0.5
-    container_name: mongodb_exam_results
-    ports:
-      - "${MONGO_EXAM_RESULTS_PORT}:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_EXAM_RESULTS_DATABASE}
-    volumes:
-      - ./data/mongodb_exam_results:/data/db
+      - ./data/mongodb:/data/db
+      - ./docker/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - skillhub-network
 
-  mongodb_ai:
-    image: mongo:7.0.5
-    container_name: mongodb_ai
-    ports:
-      - "${MONGO_AI_PORT}:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_AI_DATABASE}
-    volumes:
-      - ./data/mongodb_ai:/data/db
-    networks:
-      - skillhub-network
-
-  mongodb_course:
-    image: mongo:7.0.5
-    container_name: mongodb_course
-    ports:
-      - "${MONGO_COURSE_PORT}:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: yourpassword
-      MONGO_INITDB_DATABASE: ${MONGO_COURSE_DATABASE}
-    volumes:
-      - ./data/mongodb_course:/data/db
-    networks:
-      - skillhub-network
-  mongodb_blog:
-    image: mongo:7.0.5
-    container_name: mongodb_blog
-    ports:
-      - "${MONGO_BLOG_PORT}:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_BLOG_DATABASE}
-    volumes:
-      - ./data/mongodb_blog:/data/db
-    networks:
-      - skillhub-network
-  mongodb_assignment:
-    image: mongo:7.0.5
-    container_name: mongodb_assignment
-    ports:
-      - "${MONGO_ASSIGNMENT_PORT}:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_ASSIGNMENT_DATABASE}
-    volumes:
-      - ./data/mongodb_assignment:/data/db
-    networks:
-      - skillhub-network
-
-  mongodb_chat:
-    image: mongo:7.0.5
-    container_name: mongodb_chat
-    ports:
-      - "${MONGO_CHAT_PORT}:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_CHAT_DATABASE}
-    volumes:
-      - ./data/mongodb_chat:/data/db
-    networks:
-      - skillhub-networkz
   mysql:
     image: mysql:8.3.0
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: Asia/Ho_Chi_Minh
     ports:
       - "${MYSQL_PORT}:3306"
     volumes:
@@ -180,6 +88,7 @@ services:
       DYNAMIC_CONFIG_ENABLED: 'true'
     networks:
       - skillhub-network
+
   keycloak-mysql:
     container_name: keycloak-mysql
     image: mysql:8
@@ -219,44 +128,6 @@ services:
       - keycloak-mysql
     networks:
       - skillhub-network
-  loki:
-    image: grafana/loki:main
-    command: [ '-config.file=/etc/loki/local-config.yaml' ]
-    ports:
-      - '${LOKI_PORT}:3100'
-    networks:
-      - skillhub-network
-  prometheus:
-    image: prom/prometheus:v2.46.0
-    command:
-      - --enable-feature=exemplar-storage
-      - --config.file=/etc/prometheus/prometheus.yml
-    volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - '${PROMETHEUS_PORT}:9090'
-  tempo:
-    image: grafana/tempo:2.2.2
-    command: [ '-config.file=/etc/tempo.yaml' ]
-    volumes:
-      - ./docker/tempo/tempo.yml:/etc/tempo.yaml:ro
-      - ./docker/tempo/tempo-data:/tmp/tempo
-    ports:
-      - '${TEMPO_PORT}:3100'
-      - '${TEMPO_ZIPKIN_PORT}:9411'
-    networks:
-      - skillhub-network
-  grafana:
-    image: grafana/grafana:10.1.0
-    volumes:
-      - ./docker/grafana:/etc/grafana/provisioning/datasources:ro
-    environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_AUTH_DISABLE_LOGIN_FORM=true
-    ports:
-      - '${GRAFANA_PORT}:3000'
-
 
   profile-service:
     image: profile-service:latest
@@ -266,6 +137,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - PROFILE_SERVICE_PORT=${PROFILE_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MongoDB config
       - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
       - MONGO_USER_DATABASE=${MONGO_USER_DATABASE}
@@ -284,17 +156,19 @@ services:
       # Kafka config
       - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
-
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
       # Other services URLs
       - ENROLLMENT_SERVICE_URL=${ENROLLMENT_SERVICE_URL}
       - COURSE_SERVICE_URL=${COURSE_SERVICE_URL}
       - VNPAY_RETURN_URL=${VNPAY_RETURN_URL}
     depends_on:
-      - mongodb_user
+      - mongodb
       - keycloak
       - broker
       - schema-registry
-      - loki
+      - eureka-server
     networks:
       - skillhub-network
 
@@ -309,30 +183,15 @@ services:
       # Keycloak config
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI}
-
-      # Other services URLs
-      - ENROLLMENT_SERVICE_URL=${ENROLLMENT_SERVICE_URL}
-      - COURSE_SERVICE_URL=${COURSE_SERVICE_URL}
-      - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
-      - LECTURE_SERVICE_URL=${LECTURE_SERVICE_URL}
-      - BLOG_SERVICE_URL=${BLOG_SERVICE_URL}
-      - ASSIGNMENT_SERVICE_URL=${ASSIGNMENT_SERVICE_URL}
-      - CHAT_SERVICE_URL=${CHAT_SERVICE_URL}
-      - AI_SERVICE_URL=${AI_SERVICE_URL}
-      - EXAM_RESULTS_SERVICE_URL=${EXAM_RESULTS_SERVICE_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       - keycloak
-      # - enrollment-service
-      - course-service
-      - profile-service
-      - lecture-service
-      # - blog-service
-      # - assignment-service
-      # - chat-service
-      # - ai-service
-      # - exam-results-service
+      - eureka-server
     networks:
       - skillhub-network
+
   course-service:
     image: course-service:latest
     container_name: course-service
@@ -341,6 +200,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - COURSE_SERVICE_PORT=${COURSE_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MongoDB config
       - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
       - MONGO_COURSE_DATABASE=${MONGO_COURSE_DATABASE}
@@ -356,6 +216,9 @@ services:
       # Kafka config
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
       - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
       # Other services URLs
       - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
       - LECTURE_SERVICE_URL=${LECTURE_SERVICE_URL}
@@ -365,9 +228,11 @@ services:
     depends_on:
       - keycloak
       - profile-service
-      - mongodb_course
+      - mongodb
+      - eureka-server
     networks:
       - skillhub-network
+
   lecture-service:
     image: lecture-service:latest
     container_name: lecture-service
@@ -376,6 +241,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - LECTURE_SERVICE_PORT=${LECTURE_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MongoDB config
       - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
       - MONGO_LECTURE_DATABASE=${MONGO_LECTURE_DATABASE}
@@ -392,12 +258,15 @@ services:
       - AWS_S3_BUCKET_LECTURE=${AWS_S3_BUCKET_LECTURE}
       # Kafka config
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
-      - mongodb_lecture
+      - mongodb
       - keycloak
       - broker
       - schema-registry
-      - loki
+      - eureka-server
     networks:
       - skillhub-network
 
@@ -409,6 +278,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - ASSIGNMENT_SERVICE_PORT=${ASSIGNMENT_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MongoDB config
       - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
       - MONGO_ASSIGNMENT_DATABASE=${MONGO_ASSIGNMENT_DATABASE}
@@ -416,16 +286,29 @@ services:
       - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
       # Keycloak config
       - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI}
       # Kafka config
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
       - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+      # Other services URLs
+      - LECTURE_SERVICE_URL=${LECTURE_SERVICE_URL}
+      - EXAM_RESULTS_SERVICE_URL=${EXAM_RESULTS_SERVICE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
     depends_on:
-      - mongodb_assignment
+      - mongodb
       - keycloak
       - broker
       - schema-registry
+      - eureka-server
     networks:
       - skillhub-network
+
   blog-service:
     image: blog-service:latest
     container_name: blog-service
@@ -444,6 +327,9 @@ services:
       # Kafka config
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
       - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
       # Other services URLs
       - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
       #AWS config
@@ -452,12 +338,14 @@ services:
       - AWS_REGION=${AWS_REGION}
       - AWS_S3_BUCKET_BLOG=${AWS_S3_BUCKET_BLOG}
     depends_on:
-      - mongodb_blog
+      - mongodb
       - keycloak
       - broker
       - schema-registry
+      - eureka-server
     networks:
       - skillhub-network
+
   chat-service:
     image: chat-service:latest
     container_name: chat-service
@@ -473,11 +361,16 @@ services:
       - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
       # Keycloak config
       - KEYCLOAK_URL=${KEYCLOAK_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
-      - mongodb_chat
+      - mongodb
       - keycloak
+      - eureka-server
     networks:
       - skillhub-network
+
   exam-result-service:
     image: exam-result-service:latest
     container_name: exam-result-service
@@ -494,14 +387,22 @@ services:
       # Keycloak config
       - KEYCLOAK_URL=${KEYCLOAK_URL}
       # Kafka config
+      - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
       - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
       # Other services URLs
       - ASSIGNMENT_SERVICE_URL=${ASSIGNMENT_SERVICE_URL}
     depends_on:
-      - mongodb_exam_results
+      - mongodb
       - keycloak
+      - broker
+      - schema-registry
+      - eureka-server
     networks:
       - skillhub-network
+
   notification-service:
     image: notification-service:latest
     container_name: notification-service
@@ -510,16 +411,21 @@ services:
     environment:
       - NOTIFICATION_SERVICE_PORT=${NOTIFICATION_SERVICE_PORT}
       - SPRING_PROFILES_ACTIVE=dev
+      - TZ=Asia/Ho_Chi_Minh
       - MAILTRAP_MAIL_HOST=${MAILTRAP_MAIL_HOST}
       - MAILTRAP_MAIL_PORT=${MAILTRAP_MAIL_PORT}
       - MAILTRAP_MAIL_USERNAME=${MAILTRAP_MAIL_USERNAME}
       - MAILTRAP_MAIL_PASSWORD=${MAILTRAP_MAIL_PASSWORD}
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
       - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       - keycloak
       - broker
       - schema-registry
+      - eureka-server
     networks:
       - skillhub-network
 
@@ -531,6 +437,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - ENROLLMENT_SERVICE_PORT=${ENROLLMENT_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MySQL config
       - MYSQL_DATABASE_URL=${MYSQL_DATABASE_URL}
       - MYSQL_DATABASE_USERNAME=${MYSQL_DATABASE_USERNAME}
@@ -540,6 +447,9 @@ services:
       # Kafka config
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
       - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
       # Other services URLs
       - PROFILE_SERVICE_URL=${PROFILE_SERVICE_URL}
       - COURSE_SERVICE_URL=${COURSE_SERVICE_URL}
@@ -548,9 +458,67 @@ services:
       - keycloak
       - broker
       - schema-registry
+      - eureka-server
     networks:
       - skillhub-network
-    
+
+  eureka-server:
+    image: eureka-server:latest
+    container_name: eureka-server
+    ports:
+      - "${EUREKA_PORT:-8761}:8761"
+    environment:
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+      - SPRING_PROFILES_ACTIVE=dev
+      - PROFILE_SERVICE_PORT=${PROFILE_SERVICE_PORT}
+      - COURSE_SERVICE_PORT=${COURSE_SERVICE_PORT}
+      - LECTURE_SERVICE_PORT=${LECTURE_SERVICE_PORT}
+      - BLOG_SERVICE_PORT=${BLOG_SERVICE_PORT}
+      - ASSIGNMENT_SERVICE_PORT=${ASSIGNMENT_SERVICE_PORT}
+      - CHAT_SERVICE_PORT=${CHAT_SERVICE_PORT}
+    networks:
+      - skillhub-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ai-service:
+    image: ai-service:latest
+    container_name: ai-service
+    ports:
+      - "${AI_SERVICE_PORT}:${AI_SERVICE_PORT}"
+    environment:
+      # MongoDB config
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_DATABASE=${MONGO_AI_DATABASE}
+      - MONGO_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_PASSWORD=${MONGO_ROOT_PASSWORD}
+      # OpenAI config
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AI_SERVICE_PORT=${AI_SERVICE_PORT}
+      - ENV=development
+      - DB_URI=mongodb://localhost:27017
+      - DB_NAME=aiassistant
+      - QDRANT_HOST=e47cd5ed-9aed-4817-898a-31345e0d89f0.us-east4-0.gcp.cloud.qdrant.io
+      - QDRANT_PORT=6334
+      - QDRANT_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.AR8DKBxrvjVQ_uMuQ3Qu8a7ClDOs1TT5RjoxSGhg09M
+      - COURSE_SERVICE_URL=${COURSE_SERVICE_URL}
+      # Eureka config
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+      - EUREKA_SERVER_URL=http://${EUREKA_USERNAME:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server:8761/eureka
+    depends_on:
+      - mongodb
+      - eureka-server
+      - profile-service
+      - course-service
+    networks:
+      - skillhub-network
+
 volumes:
   mysql_data:
     driver: local

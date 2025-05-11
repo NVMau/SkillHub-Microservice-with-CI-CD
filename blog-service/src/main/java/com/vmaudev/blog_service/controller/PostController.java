@@ -1,7 +1,12 @@
 package com.vmaudev.blog_service.controller;
 
 import com.vmaudev.blog_service.dto.PostResponse;
+import com.vmaudev.blog_service.dto.PostStatsResponse;
+import com.vmaudev.blog_service.model.Comment;
+import com.vmaudev.blog_service.model.Interaction;
 import com.vmaudev.blog_service.model.Post;
+import com.vmaudev.blog_service.service.CommentService;
+import com.vmaudev.blog_service.service.InteractionService;
 import com.vmaudev.blog_service.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,13 +19,17 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/blog/posts")
+@RequestMapping("/api/blog")
 public class PostController {
     @Autowired
     private PostService postService;
+    @Autowired
+    private InteractionService interactionService;
+    @Autowired
+    private CommentService commentService;
 
 
-    @PostMapping(consumes = {"multipart/form-data"})
+    @PostMapping(value = "/posts", consumes = {"multipart/form-data"})
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<PostResponse> createPost(
             @RequestParam("authorId") String authorId,
@@ -49,20 +58,20 @@ public class PostController {
     }
 
     // Lấy tất cả bài viết
-    @GetMapping
+    @GetMapping("/posts")
     public ResponseEntity<List<Post>> getAllPosts() {
         return ResponseEntity.ok(postService.getAllPosts());
     }
 
     // Lấy bài viết theo ID
-    @GetMapping("/{postId}")
+    @GetMapping("/posts/{postId}")
     public ResponseEntity<Post> getPostById(@PathVariable String postId) {
         Optional<Post> post = postService.getPostById(postId);
         return post.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     // Cập nhật bài viết
-    @PutMapping("/{postId}")
+    @PutMapping("/posts/{postId}")
     public ResponseEntity<Post> updatePost(@PathVariable String postId, @RequestBody Post post) {
         Post updatedPost = postService.updatePost(postId, post);
         if (updatedPost != null) {
@@ -72,9 +81,40 @@ public class PostController {
     }
 
     // Xóa bài viết
-    @DeleteMapping("/{postId}")
+    @DeleteMapping("/posts/{postId}")
     public ResponseEntity<Void> deletePost(@PathVariable String postId) {
         postService.deletePost(postId);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/interactions")
+    public ResponseEntity<Interaction> addInteraction(@RequestBody Interaction interaction) {
+        Interaction createdInteraction = interactionService.addInteraction(interaction);
+        return ResponseEntity.ok(createdInteraction);
+    }
+
+    // Lấy tất cả tương tác theo PostId
+    @GetMapping("/interactions/{postId}")
+    public ResponseEntity<List<Interaction>> getInteractionsByPostId(@PathVariable String postId) {
+        return ResponseEntity.ok(interactionService.getInteractionsByPostId(postId));
+    }
+
+    @PostMapping("/comments")
+    public ResponseEntity<Comment> addComment(@RequestBody Comment comment) {
+        Comment createdComment = commentService.addComment(comment);
+        return ResponseEntity.ok(createdComment);
+    }
+
+    // Lấy tất cả bình luận theo PostId
+    @GetMapping("/comments/{postId}")
+    public ResponseEntity<List<Comment>> getCommentsByPostId(@PathVariable String postId) {
+        return ResponseEntity.ok(commentService.getCommentsByPostId(postId));
+    }
+
+    // Get post statistics (like and comment counts)
+    @GetMapping("/posts/{postId}/stats")
+    public ResponseEntity<PostStatsResponse> getPostStats(@PathVariable String postId) {
+        PostStatsResponse stats = postService.getPostStats(postId);
+        return ResponseEntity.ok(stats);
     }
 }

@@ -23,7 +23,10 @@
 hs_err_pid*
 replay_pid*
 
-# Data directory
+# Data directories
+data/
+**/data/
+**/data/**
 /data/
 /mysql/
 /skillhub-infrastructure/
@@ -39,11 +42,47 @@ replay_pid*
 .project
 .classpath
 
-
-.env
-.env.*
+# Environment files
 *.env
-.env.local
-.env.development
-.env.test
-.env.production
+.env
+env.env
+.env.*
+*env.env
+aiServiceSkilHb/env.env
+aiServiceSkilHb/*.env
+aiServiceSkilHb/.env*
+
+# Build files
+target/
+**/target/
+**/target/**
+build/
+**/build/
+**/build/**
+
+# Logs
+*.log
+logs/
+**/logs/
+**/logs/**
+**/*.log
+
+# OS generated files
+.DS_Store
+**/.DS_Store
+**/.DS_Store?
+**/._*
+**/.Spotlight-V100
+**/.Trashes
+**/ehthumbs.db
+**/Thumbs.db
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+**/*.tmp
+**/*.temp

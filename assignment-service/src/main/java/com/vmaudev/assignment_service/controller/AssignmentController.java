@@ -1,6 +1,7 @@
 package com.vmaudev.assignment_service.controller;
 
 import com.vmaudev.assignment_service.model.Assignment;
+import com.vmaudev.assignment_service.model.AIEvaluationResponse;
 import com.vmaudev.assignment_service.service.AssignmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -54,5 +55,18 @@ public class AssignmentController {
     public ResponseEntity<Void> deleteAssignment(@PathVariable String id) {
         assignmentService.deleteAssignment(id);
         return ResponseEntity.ok().build();
+    }
+
+    // API để lấy đánh giá từ AI
+    @GetMapping("/{assignmentId}/ai-evaluation/{userId}")
+    public ResponseEntity<AIEvaluationResponse> getAIEvaluation(
+            @PathVariable String assignmentId,
+            @PathVariable String userId) {
+        try {
+            AIEvaluationResponse evaluation = assignmentService.getAIEvaluation(assignmentId, userId);
+            return ResponseEntity.ok(evaluation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
