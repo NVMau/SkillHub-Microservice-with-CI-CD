@@ -4,6 +4,10 @@ import com.vmaudev.course_service.dto.response.LessonReponse;
 import com.vmaudev.course_service.model.Course;
 import com.vmaudev.course_service.service.CourseService;
 import com.vmaudev.course_service.service.LessonCompletionService;
+import com.vmaudev.course_service.repository.CertificateRepository;
+import com.vmaudev.course_service.dto.response.CertificateResponse;
+import com.vmaudev.course_service.dto.response.CertificateStatusResponse;
+import com.vmaudev.course_service.service.CertificateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +27,7 @@ public class CourseController {
 
     private final CourseService courseService;
     private final LessonCompletionService lessonCompletionService;
+    private final CertificateService certificateService;
 
     @PostMapping(consumes = {"multipart/form-data"})
     @ResponseStatus(HttpStatus.CREATED)
@@ -124,6 +129,7 @@ public class CourseController {
         return ResponseEntity.ok(count);
     }
 
+
     @GetMapping("/lesson-completion/course/{courseId}/progress")
     public ResponseEntity<LearningProgressResponse> getLearningProgress(
             @PathVariable String courseId,
@@ -131,6 +137,13 @@ public class CourseController {
         log.info("Getting learning progress for user {} in course {}", userId, courseId);
         return ResponseEntity.ok(lessonCompletionService.getLearningProgress(userId, courseId));
     }
+    @GetMapping("/overview/progress")
+    public ResponseEntity<LearningProgressResponse> getOverviewProgress(
+            @RequestParam String userId) {
+        log.info("Getting overview progress for user {}", userId);
+        return ResponseEntity.ok(lessonCompletionService.getOverviewProgress(userId));
+    }
+
 
     @GetMapping("/lesson-completion/course/{courseId}/lessons")
     public ResponseEntity<List<LessonReponse>> getLessonsByCourseId(
@@ -146,5 +159,45 @@ public class CourseController {
         return ResponseEntity.ok(lessonCompletionService.getStudentsProgress(courseId));
     }
 
+    @GetMapping("/{courseId}/certificate/status")
+    public ResponseEntity<CertificateStatusResponse> checkCertificateStatus(
+            @PathVariable String courseId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(certificateService.checkCertificateStatus(courseId, userId));
+    }
+
+    @PostMapping("/{courseId}/certificate")
+    public ResponseEntity<CertificateResponse> issueCertificate(
+            @PathVariable String courseId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(certificateService.issueCertificate(courseId, userId));
+    }
+
+    @GetMapping("/{courseId}/certificate")
+    public ResponseEntity<CertificateResponse> getCertificate(
+            @PathVariable String courseId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(certificateService.getCertificate(courseId, userId));
+    }
+
+    @GetMapping("/certificates/user/{userId}")
+    public ResponseEntity<List<CertificateResponse>> getAllCertificatesByUserId(
+            @PathVariable String userId) {
+        return ResponseEntity.ok(certificateService.getAllCertificatesByUserId(userId));
+    }
+
+    @GetMapping("/certificates/user/{userId}/count")
+    public ResponseEntity<Long> countCertificatesByUserId(
+            @PathVariable String userId) {
+        return ResponseEntity.ok(certificateService.countCertificatesByUserId(userId));
+    }
+    
+
+    @GetMapping("/category/{category}")
+    public ResponseEntity<List<CourseResponse>> getCoursesByCategory(@PathVariable String category) {
+        return ResponseEntity.ok(courseService.getCoursesByCategory(category));
+    }
+
 
 }
+

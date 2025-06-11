@@ -78,8 +78,8 @@ func (h *Handler) SendMessage(c *fiber.Ctx) error {
 		})
 	}
 	token := parts[1]
-	h.logger.Info("Token",
-		zap.Any("Token", token))
+	// h.logger.Info("Token",
+	// 	zap.Any("Token", token))
 	// Tạo context với timeout và token
 	ctx, cancel := context.WithTimeout(c.Context(), 60*time.Second)
 	defer cancel()

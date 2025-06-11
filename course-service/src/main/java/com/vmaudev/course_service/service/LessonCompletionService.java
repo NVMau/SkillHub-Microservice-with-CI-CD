@@ -63,6 +63,60 @@ public class LessonCompletionService {
         return lessonCompletionRepository.countByUserIdAndCourseIdAndCompletedTrue(userId, courseId);
     }
 
+    public LearningProgressResponse getOverviewProgress(String userId) {
+        log.info("Getting overview progress for user {}", userId);
+        
+        // Lấy token từ security context
+        String token = getTokenFromSecurityContext();
+        
+        // Lấy danh sách khóa học mà học viên đã đăng ký
+        List<EnrollmentReponse> enrollments = enrollementClient.getEnrollmentsByUserId(userId, token);
+        
+        int totalLessons = 0;
+        int completedLessons = 0;
+        int totalAssignments = 0;
+        int completedAssignments = 0;
+        LocalDateTime lastCompletedAt = null;
+        LocalDateTime lastAccessedAt = null;
+        
+        // Tính toán tổng tiến độ qua tất cả các khóa học
+        for (EnrollmentReponse enrollment : enrollments) {
+            LearningProgressResponse courseProgress = getLearningProgress(userId, enrollment.getCourseId());
+            
+            totalLessons += courseProgress.getTotalLessons();
+            completedLessons += courseProgress.getCompletedLessons();
+            totalAssignments += courseProgress.getTotalAssignments();
+            completedAssignments += courseProgress.getCompletedAssignments();
+            
+            // Cập nhật thời gian hoàn thành và truy cập cuối cùng
+            if (courseProgress.getLastCompletedAt() != null && 
+                (lastCompletedAt == null || courseProgress.getLastCompletedAt().isAfter(lastCompletedAt))) {
+                lastCompletedAt = courseProgress.getLastCompletedAt();
+            }
+            if (courseProgress.getLastAccessedAt() != null && 
+                (lastAccessedAt == null || courseProgress.getLastAccessedAt().isAfter(lastAccessedAt))) {
+                lastAccessedAt = courseProgress.getLastAccessedAt();
+            }
+        }
+        
+        // Tính phần trăm hoàn thành tổng quan
+        double lessonProgressPercentage = totalLessons > 0 ? 
+            (double) completedLessons / totalLessons * 100 : 0;
+        double assignmentProgressPercentage = totalAssignments > 0 ? 
+            (double) completedAssignments / totalAssignments * 100 : 0;
+        
+        return LearningProgressResponse.builder()
+            .totalLessons(totalLessons)
+            .completedLessons(completedLessons)
+            .totalAssignments(totalAssignments)
+            .completedAssignments(completedAssignments)
+            .lessonProgressPercentage(Math.round(lessonProgressPercentage * 100.0) / 100.0)
+            .assignmentProgressPercentage(Math.round(assignmentProgressPercentage * 100.0) / 100.0)
+            .lastCompletedAt(lastCompletedAt)
+            .lastAccessedAt(lastAccessedAt)
+            .build();
+    }
+
     public LearningProgressResponse getLearningProgress(String userId, String courseId) {
         log.info("Getting learning progress for user {} in course {}", userId, courseId);
         

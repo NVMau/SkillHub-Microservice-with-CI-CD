@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Comparator;
+import java.text.Normalizer;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +39,12 @@ public class CourseService {
     private final KafkaTemplate<String, CourseDeleteEvent> kafkaTemplateDelete;
     private final LessonCompletionService lessonCompletionService;
 
+    private String normalizeText(String text) {
+        if (text == null) return null;
+        String normalized = Normalizer.normalize(text, Normalizer.Form.NFD);
+        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        return pattern.matcher(normalized).replaceAll("").toLowerCase();
+    }
 
     public CourseResponse createCourse(CourseRequest courseRequest, MultipartFile file) throws IOException {
         String fileUrl = s3Service.uploadFile(file);  // Upload file lên S3 và lấy URL của file
@@ -44,6 +52,8 @@ public class CourseService {
         Course course = Course.builder()
                 .name(courseRequest.getName())
                 .description(courseRequest.getDescription())
+                .nameNormalized(normalizeText(courseRequest.getName()))
+                .descriptionNormalized(normalizeText(courseRequest.getDescription()))
                 .price(courseRequest.getPrice())
                 .category(courseRequest.getCategory())
                 .imageUrl(fileUrl)  // Lưu URL file vào imageUrl
@@ -75,6 +85,8 @@ public class CourseService {
 
         course.setName(courseRequest.getName());
         course.setDescription(courseRequest.getDescription());
+        course.setNameNormalized(normalizeText(courseRequest.getName()));
+        course.setDescriptionNormalized(normalizeText(courseRequest.getDescription()));
         course.setPrice(courseRequest.getPrice());
         course.setCategory(courseRequest.getCategory());
         course.setImageUrl(courseRequest.getImageUrl());
@@ -167,8 +179,17 @@ public class CourseService {
             throw new RuntimeException("Token không hợp lệ");
         }
 
-        // Tạo pattern cho keyword
-        String keywordPattern = (keyword != null && !keyword.isEmpty()) ? keyword : ".*";
+        // Kiểm tra nếu không có bất kỳ tham số tìm kiếm nào
+        if ((keyword == null || keyword.trim().isEmpty()) && 
+            (teacherName == null || teacherName.trim().isEmpty()) && 
+            minPrice == null && maxPrice == null) {
+            return courseRepository.findAll().stream()
+                    .map(this::mapToCourseResponse)
+                    .collect(Collectors.toList());
+        }
+
+        // Normalize keyword nếu có
+        String normalizedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? normalizeText(keyword) : "";
 
         // Danh sách teacherId
         List<String> teacherIds = new ArrayList<>();
@@ -184,39 +205,25 @@ public class CourseService {
             }
         }
 
+        List<Course> courses;
         // Tìm kiếm theo các trường hợp
         if (!teacherIds.isEmpty() && minPrice != null && maxPrice != null) {
             // Tìm kiếm theo keyword, teacherId, và khoảng giá
-            return courseRepository.findCoursesWithTeacherId(keywordPattern, teacherIds, minPrice, maxPrice)
-                    .stream()
-                    .map(this::mapToCourseResponse)
-                    .collect(Collectors.toList());
+            courses = courseRepository.findCoursesWithTeacherId(normalizedKeyword, teacherIds, minPrice, maxPrice);
         } else if (!teacherIds.isEmpty()) {
             // Tìm kiếm theo keyword và teacherId, không có khoảng giá
-            return courseRepository.findCoursesByTeacherIdOnly(keywordPattern, teacherIds)
-                    .stream()
-                    .map(this::mapToCourseResponse)
-                    .collect(Collectors.toList());
-
-        }else if (minPrice != null && maxPrice != null) {
+            courses = courseRepository.findCoursesByTeacherIdOnly(normalizedKeyword, teacherIds);
+        } else if (minPrice != null && maxPrice != null) {
             // Tìm kiếm theo keyword và khoảng giá, không có teacherId
-            return courseRepository.findCoursesWithoutTeacherId(keywordPattern, minPrice, maxPrice)
-                    .stream()
-                    .map(this::mapToCourseResponse)
-                    .collect(Collectors.toList());
-        } else if (!teacherIds.isEmpty()) {
-            // Tìm kiếm theo keyword và teacherId, không có khoảng giá
-            return courseRepository.findCoursesWithTeacherId(keywordPattern, teacherIds, null, null)
-                    .stream()
-                    .map(this::mapToCourseResponse)
-                    .collect(Collectors.toList());
+            courses = courseRepository.findCoursesWithoutTeacherId(normalizedKeyword, minPrice, maxPrice);
         } else {
             // Tìm kiếm chỉ theo keyword
-            return courseRepository.findCoursesByKeyword(keywordPattern)
-                    .stream()
-                    .map(this::mapToCourseResponse)
-                    .collect(Collectors.toList());
+            courses = courseRepository.findCoursesByKeyword(normalizedKeyword);
         }
+
+        return courses.stream()
+                .map(this::mapToCourseResponse)
+                .collect(Collectors.toList());
     }
 
     public List<FeaturedInstructorResponse> getFeaturedInstructors() {
@@ -275,5 +282,11 @@ public class CourseService {
         }
     }
 
+    public List<CourseResponse> getCoursesByCategory(String category) {
+        List<Course> courses = courseRepository.findByCategory(category);
+        return courses.stream()
+                .map(this::mapToCourseResponse)
+                .collect(Collectors.toList());
+    }
 
 }

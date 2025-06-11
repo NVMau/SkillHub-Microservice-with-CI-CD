@@ -222,6 +222,7 @@ public class ProfileService {
         existingProfile.setLastName(updatedProfile.getLastName());
         existingProfile.setDob(updatedProfile.getDob());
         existingProfile.setCoin(updatedProfile.getCoin());
+        existingProfile.setAddress(updatedProfile.getAddress());
         // Thêm các trường khác nếu cần
 
         return profileRepository.save(existingProfile);

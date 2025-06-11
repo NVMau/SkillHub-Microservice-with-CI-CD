@@ -54,4 +54,21 @@ public class LectureController {
         lectureService.deleteLecture(lectureId);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping(value = "/{lectureId}", consumes = {"multipart/form-data"})
+    public ResponseEntity<Lecture> updateLecture(
+            @PathVariable String lectureId,
+            @RequestParam("title") String title,
+            @RequestParam("content") String content,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "videos", required = false) List<MultipartFile> videos
+    ) throws IOException {
+        Lecture updatedLecture = Lecture.builder()
+                .title(title)
+                .content(content)
+                .build();
+
+        Lecture result = lectureService.updateLecture(lectureId, updatedLecture, file, videos);
+        return ResponseEntity.ok(result);
+    }
 }

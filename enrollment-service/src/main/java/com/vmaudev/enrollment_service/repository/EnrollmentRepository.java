@@ -3,6 +3,7 @@ package com.vmaudev.enrollment_service.repository;
 import com.vmaudev.enrollment_service.model.Enrollment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +17,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment,Long> {
     void deleteByStudentId(String studentId);
     void deleteByCourseId(String courseId);
     long countByCourseId(String courseId);
+    
+    // Tìm kiếm các Enrollment sau một ngày cụ thể
+    List<Enrollment> findByEnrollmentDateAfter(LocalDateTime date);
 }

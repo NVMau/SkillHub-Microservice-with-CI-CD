@@ -21,6 +21,8 @@ public class Course {
     private String id;
     private String name;
     private String description;
+    private String nameNormalized;  // Tên khóa học không dấu
+    private String descriptionNormalized;  // Mô tả không dấu
     private BigDecimal price;
     private String category;
     private String imageUrl;

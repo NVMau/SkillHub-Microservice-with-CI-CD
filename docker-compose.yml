@@ -186,6 +186,7 @@ services:
       # Eureka config
       - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
       - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - keycloak
       - eureka-server
@@ -258,6 +259,7 @@ services:
       - AWS_S3_BUCKET_LECTURE=${AWS_S3_BUCKET_LECTURE}
       # Kafka config
       - KAFKA_BROKER_BOOTSTRAP_SERVER=${KAFKA_BROKER_BOOTSTRAP_SERVER}
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
       # Eureka config
       - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
       - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -317,6 +319,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - BLOG_SERVICE_PORT=${BLOG_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MongoDB config
       - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
       - MONGO_BLOG_DATABASE=${MONGO_BLOG_DATABASE}
@@ -354,6 +357,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - CHAT_SERVICE_PORT=${CHAT_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MongoDB config
       - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
       - MONGO_CHAT_DATABASE=${MONGO_CHAT_DATABASE}
@@ -379,6 +383,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - EXAM_SERVICE_PORT=${EXAM_SERVICE_PORT}
+      - TZ=Asia/Ho_Chi_Minh
       # MongoDB config
       - MONGO_ALL_ON_SYS=${MONGO_ALL_ON_SYS}
       - MONGO_EXAM_RESULTS_DATABASE=${MONGO_EXAM_RESULTS_DATABASE}
@@ -471,6 +476,7 @@ services:
       - EUREKA_USERNAME=${EUREKA_USERNAME:-admin}
       - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
       - SPRING_PROFILES_ACTIVE=dev
+      - TZ=Asia/Ho_Chi_Minh
       - PROFILE_SERVICE_PORT=${PROFILE_SERVICE_PORT}
       - COURSE_SERVICE_PORT=${COURSE_SERVICE_PORT}
       - LECTURE_SERVICE_PORT=${LECTURE_SERVICE_PORT}
@@ -502,6 +508,7 @@ services:
       - AI_SERVICE_PORT=${AI_SERVICE_PORT}
       - ENV=development
       - DB_URI=mongodb://localhost:27017
+      - TZ=Asia/Ho_Chi_Minh
       - DB_NAME=aiassistant
       - QDRANT_HOST=e47cd5ed-9aed-4817-898a-31345e0d89f0.us-east4-0.gcp.cloud.qdrant.io
       - QDRANT_PORT=6334

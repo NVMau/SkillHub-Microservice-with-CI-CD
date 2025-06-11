@@ -3,7 +3,6 @@ package services
 import (
 	"aiServiceSkilHb/internal/repository"
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/sashabaranov/go-openai"
@@ -41,47 +40,11 @@ func (s *KnowledgeServiceImpl) HandleKnowledgeQuestion(ctx context.Context, chat
 		return "", errors.Wrap(err, "failed to search knowledge base")
 	}
 
-	// Nếu không tìm thấy kết quả, gửi xuống AISummaryService
+	// Nếu không tìm thấy kết quả
 	if len(results) == 0 {
-		if len(results) == 0 {
-			results = []*repository.Knowledge{
-				{
-					ID:      "no-data",
-					Title:   "No Knowledge Found",
-					Content: "Don't have data in knowledge base.",
-				},
-			}
-		}
+		return "Xin lỗi, tôi không tìm thấy thông tin phù hợp trong cơ sở dữ liệu.", nil
 	}
 
-	// Chuẩn bị dữ liệu từ Knowledge Base
-	var knowledgeData string
-	for i, result := range results {
-		knowledgeData += fmt.Sprintf("Kiến thức %d:\nTiêu đề: %s\nNội dung: %s\n\n", i+1, result.Title, result.Content)
-	}
-
-	// Sử dụng GPT-4 để tạo câu trả lời dựa trên dữ liệu từ Knowledge Base
-	resp, err := s.openAIClient.CreateChatCompletion(
-		ctx,
-		openai.ChatCompletionRequest{
-			Model: openai.GPT4,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "Bạn là một trợ lý AI thông minh. Hãy sử dụng thông tin từ Knowledge Base để trả lời câu hỏi của người dùng. Nếu thông tin không đủ, hãy thông báo cho người dùng biết.",
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: fmt.Sprintf("Câu hỏi: %s\n\nThông tin từ Knowledge Base:\n%s", query, knowledgeData),
-				},
-			},
-			Temperature: 0.7,
-		},
-	)
-
-	if err != nil {
-		return "", errors.Wrap(err, "failed to generate response from knowledge base")
-	}
-
-	return resp.Choices[0].Message.Content, nil
+	// Trả về nội dung của kết quả đầu tiên
+	return results[0].Content, nil
 }

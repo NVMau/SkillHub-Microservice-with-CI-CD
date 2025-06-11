@@ -61,7 +61,7 @@ func (s *ChatServiceImplV2) ProcessMessage(ctx context.Context, message string, 
 
 			return result, nil
 		} else {
-			// Nếu không có ToolCalls, vẫn gửi xuống AISummaryService để xử lý
+			s.logger.Info("No tool calls")
 			result, err := s.questionAnalyzer.HandleClassificationResponse(ctx, response, chatHistory, message)
 			if err != nil {
 				return "", errors.Wrap(err, "failed to handle classification response")

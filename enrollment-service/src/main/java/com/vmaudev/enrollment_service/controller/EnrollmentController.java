@@ -2,6 +2,7 @@ package com.vmaudev.enrollment_service.controller;
 
 import com.vmaudev.enrollment_service.dto.EnrollmentRequest;
 import com.vmaudev.enrollment_service.dto.CourseEnrollmentResponse;
+import com.vmaudev.enrollment_service.dto.RatingWithUserInfoResponse;
 import com.vmaudev.enrollment_service.model.Enrollment;
 import com.vmaudev.enrollment_service.model.Rating;
 import com.vmaudev.enrollment_service.service.EnrollmentService;
@@ -12,9 +13,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -108,16 +111,35 @@ public class EnrollmentController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
-
-
     // API lấy danh sách đánh giá cho khóa học
     @GetMapping("ratings/courses/{courseId}/ratings")
-    public ResponseEntity<List<Rating>> getRatingsByCourse(@PathVariable String courseId) {
-        return ResponseEntity.ok(ratingService.getRatingsByCourse(courseId));
+    public ResponseEntity<List<RatingWithUserInfoResponse>> getRatingsByCourse(@PathVariable String courseId) {
+        return ResponseEntity.ok(ratingService.getRatingsByCourseWithUserInfo(courseId));
     }
 
     @GetMapping("ratings/course/{courseId}/student/{studentId}")
     public ResponseEntity<Rating> getRatingByCourseIdAndStudentId(@PathVariable String courseId,@PathVariable String studentId) {
         return ResponseEntity.ok(ratingService.getRatingByCourseIdAndStudentId(courseId,studentId));
     }
+
+    @GetMapping("ratings/course/{courseId}/average")
+    public ResponseEntity<Double> getAverageRatingByCourseId(@PathVariable String courseId) {
+        return ResponseEntity.ok(ratingService.getAverageRatingByCourseId(courseId));
+    }
+
+    @GetMapping("/revenue")
+    public ResponseEntity<Map<String, Object>> getTotalRevenue(
+            @RequestParam(required = false) Integer days) {
+        Map<String, Object> revenue = enrollmentService.getTotalRevenue(days);
+        return new ResponseEntity<>(revenue, HttpStatus.OK);
+    }
+
+    @GetMapping("/revenue/instructor/{userId}")
+    public ResponseEntity<Map<String, Object>> getInstructorRevenue(
+            @PathVariable String userId,
+            @RequestParam(required = false) Integer days) {
+        Map<String, Object> revenue = enrollmentService.getInstructorRevenue(userId, days);
+        return new ResponseEntity<>(revenue, HttpStatus.OK);
+    }
+    
 }

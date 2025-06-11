@@ -25,6 +25,7 @@ public class Profile {
     private String firstName;
     private String lastName;
     private String avatarUrl;
+    private String address;
     private LocalDate dob;
     private BigDecimal coin;
     private List<String> roles; // Danh sách các vai trò của người dùng  để lấy danh sách học sinh do khi lấy bằng keycloak phải cho quyền cao gây mất đi tính bảo mât

@@ -93,6 +93,64 @@ public class LectureService {
 
 
     public void deleteLecture(String lectureId) {
-        lectureRepository.deleteById(lectureId);
+        try {
+            log.info("Starting to delete lecture with id: {}", lectureId);
+            
+            // Kiểm tra bài giảng có tồn tại không
+            if (!lectureRepository.existsById(lectureId)) {
+                log.error("Lecture with id {} not found", lectureId);
+                throw new RuntimeException("Lecture not found");
+            }
+
+            // Tạo sự kiện xóa bài giảng
+            log.info("Creating LectureDeletedEvent for lecture id: {}", lectureId);
+            LectureDeletedEvent lectureDeletedEvent = new LectureDeletedEvent(List.of(lectureId));
+            
+            // Gửi sự kiện
+            log.info("Sending LectureDeletedEvent to Kafka topic lectures-deleted");
+            kafkaTemplateDelete.send("lectures-deleted", lectureDeletedEvent);
+            log.info("Successfully sent LectureDeletedEvent to Kafka");
+            
+            // Xóa bài giảng
+            log.info("Deleting lecture from database");
+            lectureRepository.deleteById(lectureId);
+            log.info("Successfully deleted lecture with id: {}", lectureId);
+        } catch (Exception e) {
+            log.error("Error deleting lecture with id {}: {}", lectureId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    public Lecture updateLecture(String lectureId, Lecture updatedLecture, MultipartFile file, List<MultipartFile> videoFiles) throws IOException {
+        // Tìm bài giảng cần cập nhật
+        Lecture existingLecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new RuntimeException("Lecture not found"));
+
+        // Cập nhật thông tin cơ bản
+        existingLecture.setTitle(updatedLecture.getTitle());
+        existingLecture.setContent(updatedLecture.getContent());
+        existingLecture.setUpdatedAt(new Date());
+
+        // Nếu có file mới, cập nhật fileUrl
+        if (file != null && !file.isEmpty()) {
+            String fileUrl = s3Service.uploadFile(file);
+            existingLecture.setFileUrl(fileUrl);
+        }
+
+        // Nếu có video mới, cập nhật videoUrls
+        if (videoFiles != null && !videoFiles.isEmpty()) {
+            List<String> videoUrls = videoFiles.stream()
+                    .map(video -> {
+                        try {
+                            return s3Service.uploadFile(video);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .toList();
+            existingLecture.setVideoUrls(videoUrls);
+        }
+
+        return lectureRepository.save(existingLecture);
     }
 }

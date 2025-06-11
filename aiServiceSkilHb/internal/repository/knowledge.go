@@ -72,7 +72,7 @@ func (k *knowledgeRepo) Create(ctx context.Context, knowledge *Knowledge) error 
 	payload := map[string]interface{}{
 		"title":           knowledge.Title,
 		"content":         knowledge.Content,
-		"last_updated_at": knowledge.LastUpdatedAt,
+		"last_updated_at": knowledge.LastUpdatedAt.Unix(),
 	}
 
 	// Create point

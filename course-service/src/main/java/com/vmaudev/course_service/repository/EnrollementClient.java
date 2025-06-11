@@ -14,4 +14,7 @@ public interface EnrollementClient {
     @GetMapping("/api/enrollments/course/{courseId}/students")
     List<EnrollmentReponse> getStudentsByCourseId(@PathVariable("courseId") String courseId, @RequestHeader("Authorization") String token);
 
+    @GetMapping("/api/enrollments/student/{userId}")
+    List<EnrollmentReponse> getEnrollmentsByUserId(@PathVariable("userId") String userId, @RequestHeader("Authorization") String token);
+
 }

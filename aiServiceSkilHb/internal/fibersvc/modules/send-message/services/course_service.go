@@ -47,6 +47,7 @@ type CourseResponse struct {
 	Tags        []string `json:"tags"`
 	Price       float64  `json:"price"`
 	TeacherName string   `json:"teacherName"`
+	ImageUrl    string   `json:"imageUrl"`
 }
 
 // CourseSearchResponse định nghĩa cấu trúc response từ API tìm kiếm khóa học
@@ -266,13 +267,14 @@ func (s *CourseServiceImpl) fetchCourseData(ctx context.Context, query string) (
 func formatCourses(courses []CourseResponse) string {
 	var result string
 	for _, course := range courses {
-		result += fmt.Sprintf("- %s\n  Mô tả: %s\n  Danh mục: %s\n  Tags: %s\n  Giá: %.0f VNĐ\n  Giảng viên: %s\n\n",
+		result += fmt.Sprintf("- %s\n  Mô tả: %s\n  Danh mục: %s\n  Tags: %s\n  Giá: %.0f VNĐ\n  Giảng viên: %s\n  Ảnh: %s\n\n",
 			course.Title,
 			course.Description,
 			course.Category,
 			strings.Join(course.Tags, ", "),
 			course.Price,
 			course.TeacherName,
+			course.ImageUrl,
 		)
 	}
 	return result

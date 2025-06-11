@@ -39,10 +39,12 @@ func NewQuestionAnalyzerService(
 
 // toolCallResult định nghĩa kết quả từ một tool call
 type toolCallResult struct {
-	content    string
-	toolCallID string
-	err        error
-	ctx        context.Context
+	content          string
+	toolCallID       string
+	err              error
+	ctx              context.Context
+	assistantMessage openai.ChatCompletionMessage
+	functionMessage  openai.ChatCompletionMessage
 }
 
 // AIDefinition định nghĩa các function có sẵn cho AI
@@ -94,6 +96,7 @@ func AIDefinition() []openai.Tool {
 // AnalyzeQuestionType phân tích loại câu hỏi
 func (s *QuestionAnalyzerServiceImpl) AnalyzeQuestionType(ctx context.Context, message string, chatHistory []ChatMessage) (*openai.ChatCompletionResponse, []ChatMessage, error) {
 	// Tạo system message với prompting mới
+	s.logger.Info("Chat History fisst", zap.Any("chatHistory", chatHistory))
 	systemMessage := fmt.Sprintf(`# Trợ lý AI SkillHub
 
 Bạn là một Trợ lý AI có nhiệm vụ xác định các function cần gọi dựa trên yêu cầu của người dùng.
@@ -103,11 +106,13 @@ Bạn là một Trợ lý AI có nhiệm vụ xác định các function cần g
 
 ## Các Function có sẵn:
 ### ai-knowledge: 
-Sử dụng function này khi người dùng hỏi về bài viết trong cơ sở kiến thức, câu hỏi thường gặp, hướng dẫn xử lý sự cố hoặc thông tin chung.
+Sử dụng function này khi người dùng hỏi về bài viết trong cơ sở kiến thức, câu hỏi thường gặp, hướng dẫn xử lý sự cố hoặc thông tin chung, hướng dẫn người dùng thao tác trên hệ thống.
 - Ví dụ:
 - "Làm thế nào để tạo khóa học mới?"
 - "Làm thế nào để học tập hiệu quả hơn?"
 - "Làm thế nào để mua khóa học?"
+- "Hướng dẫn cách tạo một khoá học"
+_ "Hướng dẫn cách xem chứng chỉ"
 
 ### ai-retrieval-data
 Sử dụng function này khi người dùng yêu cầu thông tin về khóa học.
@@ -116,7 +121,6 @@ Sử dụng function này khi người dùng yêu cầu thông tin về khóa h�
 
   1. Thông tin khóa học
      - Tên khóa học, giá khóa học, tên giảng viên
-     - Lợi nhuận, dòng tiền, chi phí vận hành
      - Ví dụ: "Gợi ý cho tôi một số khóa học về Golang?"
 
 #QUAN TRỌNG:
@@ -137,7 +141,7 @@ Tham số "query" trong tool_calls phải sử dụng ngôn ngữ phù hợp v�
 
 ## Định dạng Đầu ra:
 - Trả về các function call bằng tham số tool_calls
-- Không trả về bất kỳ nội dung nào trong message
+- Nếu không có function call không trả về gì cả
 - Mỗi function call phải có ID duy nhất
 - Các tham số phải được định dạng JSON đúng chuẩn`, "Chat Page")
 
@@ -195,15 +199,18 @@ Tham số "query" trong tool_calls phải sử dụng ngôn ngữ phù hợp v�
 // HandleClassificationResponse xử lý kết quả từ function calls
 func (s *QuestionAnalyzerServiceImpl) HandleClassificationResponse(ctx context.Context, response *openai.ChatCompletionResponse, chatHistory []ChatMessage, message string) (string, error) {
 	choice := response.Choices[0]
-	if len(choice.Message.ToolCalls) == 0 {
-		fallbackMessage := openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleAssistant,
-			Content: choice.Message.Content,
-		}
+	// if len(choice.Message.ToolCalls) == 0 {
+	// 	// Nếu không có tool calls, trả về nội dung trực tiếp từ AI
+	// 	content := choice.Message.Content
 
-		return s.summaryService.SummarizeResults(ctx, chatHistory, []openai.ChatCompletionMessage{fallbackMessage})
+	// 	// Thêm vào chat history
+	// 	chatHistory = append(chatHistory, ChatMessage{
+	// 		Role:    "assistant",
+	// 		Content: content,
+	// 	})
 
-	}
+	// 	return content, nil
+	// }
 
 	// Tạo channel để nhận kết quả từ goroutines
 	resultChan := make(chan toolCallResult, len(choice.Message.ToolCalls))
@@ -245,11 +252,36 @@ func (s *QuestionAnalyzerServiceImpl) HandleClassificationResponse(ctx context.C
 				err = fmt.Errorf("unknown function: %s", tc.Function.Name)
 			}
 
+			// Tạo assistant message với function call
+			assistantMessage := openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: "",
+				ToolCalls: []openai.ToolCall{
+					{
+						ID:   tc.ID,
+						Type: openai.ToolTypeFunction,
+						Function: openai.FunctionCall{
+							Name:      tc.Function.Name,
+							Arguments: tc.Function.Arguments,
+						},
+					},
+				},
+			}
+
+			// Tạo function message với kết quả
+			functionMessage := openai.ChatCompletionMessage{
+				Role:       openai.ChatMessageRoleTool,
+				Content:    content,
+				ToolCallID: tc.ID,
+			}
+
 			resultChan <- toolCallResult{
-				content:    content,
-				toolCallID: tc.ID,
-				err:        err,
-				ctx:        toolCtx,
+				content:          content,
+				toolCallID:       tc.ID,
+				err:              err,
+				ctx:              toolCtx,
+				assistantMessage: assistantMessage,
+				functionMessage:  functionMessage,
 			}
 		}(toolCall, ctx)
 	}
@@ -269,32 +301,16 @@ func (s *QuestionAnalyzerServiceImpl) HandleClassificationResponse(ctx context.C
 			continue
 		}
 
-		// Lấy lại function name từ toolCalls
-		var functionName string
-		for _, tc := range choice.Message.ToolCalls {
-			if tc.ID == result.toolCallID {
-				functionName = tc.Function.Name
-				break
-			}
-		}
-
-		// Tạo message với role function
-		functionMessages = append(functionMessages, openai.ChatCompletionMessage{
-			Role:       openai.ChatMessageRoleFunction,
-			Name:       functionName,
-			Content:    result.content,
-			ToolCallID: result.toolCallID,
-		})
+		// Thêm cả assistant message và function message
+		functionMessages = append(functionMessages, result.assistantMessage, result.functionMessage)
 	}
-	s.logger.Info("functionMessages after goroutine", zap.Any("", functionMessages))
 
 	// Kiểm tra lỗi
 	if len(errors) > 0 {
 		return "", fmt.Errorf("errors occurred while processing function calls: %v", errors)
 	}
-	s.logger.Info("Result affter handle HandleClassificationResponse ")
 
-	// Kết hợp kết quả từ tất cả các function calls
+	s.logger.Info("Function messages before summary", zap.Any("messages", functionMessages))
 
 	// Gửi tất cả kết quả xuống AISummaryService để tổng hợp
 	return s.summaryService.SummarizeResults(ctx, chatHistory, functionMessages)

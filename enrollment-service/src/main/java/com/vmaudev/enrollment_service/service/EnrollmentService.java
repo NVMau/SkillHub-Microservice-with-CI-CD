@@ -4,6 +4,7 @@ import com.vmaudev.course_service.event.CourseDeleteEvent;
 import com.vmaudev.enrollment_service.dto.CourseEnrollmentResponse;
 import com.vmaudev.enrollment_service.dto.CourseResponse;
 import com.vmaudev.enrollment_service.dto.EnrollmentRequest;
+import com.vmaudev.enrollment_service.dto.EnrollmentRevenueDetail;
 import com.vmaudev.enrollment_service.dto.ProfileResponse;
 import com.vmaudev.enrollment_service.dto.StudentEnrollmentInfo;
 import com.vmaudev.enrollment_service.event.OrderPlacedEvent;
@@ -24,8 +25,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -71,8 +75,16 @@ public class EnrollmentService {
 
         BigDecimal newBalance = studentBalance.subtract(coursePrice);
         profile.setCoin(newBalance);
-        profileClient.updateUserProfile(profile.getProfileId(), profile,token);
 
+        profileClient.updateUserProfile(profile.getProfileId(), profile,token);
+        //Xu ly transaction
+        ProfileResponse profileTeacher = profileClient.getUserById(course.getTeacherId(), token);
+        BigDecimal teacherAmount = coursePrice.multiply(BigDecimal.valueOf(0.9));
+        BigDecimal currentCoin = profileTeacher.getCoin() != null ? profileTeacher.getCoin() : BigDecimal.ZERO;
+        // Cộng thêm số coin mới
+        profileTeacher.setCoin(currentCoin.add(teacherAmount));
+        profileClient.updateUserProfile(profileTeacher.getProfileId(), profileTeacher,token);
+        
 
         Enrollment enrollment = new Enrollment();
         enrollment.setStudentId(enrollmentRequest.getStudentId());
@@ -208,6 +220,146 @@ public class EnrollmentService {
         } catch (Exception e) {
             log.error("Lỗi khi lấy thông tin đăng ký khóa học {}: {}", courseId, e.getMessage());
             throw new RuntimeException("Không thể lấy thông tin đăng ký khóa học", e);
+        }
+    }
+
+    public Map<String, Object> getTotalRevenue(Integer days) {
+        try {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            String token = "";
+            if (authentication instanceof JwtAuthenticationToken) {
+                JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
+                token = "Bearer " + jwtAuth.getToken().getTokenValue();
+            } else {
+                throw new RuntimeException("Token không hợp lệ");
+            }
+
+            LocalDateTime startDate = days != null ? 
+                LocalDateTime.now().minusDays(days) : 
+                LocalDateTime.now().minusYears(1);
+
+            List<Enrollment> enrollments = enrollmentRepository.findByEnrollmentDateAfter(startDate);
+            BigDecimal totalRevenue = BigDecimal.ZERO;
+            BigDecimal platformRevenue = BigDecimal.ZERO;
+            BigDecimal teacherRevenue = BigDecimal.ZERO;
+            int validEnrollments = 0;
+            List<EnrollmentRevenueDetail> enrollmentDetails = new ArrayList<>();
+
+            for (Enrollment enrollment : enrollments) {
+                try {
+                    CourseResponse course = courseClient.getCourseById(enrollment.getCourseId(), token);
+                    if (course != null && course.getPrice() != null) {
+                        BigDecimal coursePrice = course.getPrice();
+                        totalRevenue = totalRevenue.add(coursePrice);
+                        
+                        // Platform gets 10% of the course price
+                        BigDecimal platformShare = coursePrice.multiply(BigDecimal.valueOf(0.1));
+                        platformRevenue = platformRevenue.add(platformShare);
+                        
+                        // Teacher gets 90% of the course price
+                        BigDecimal teacherShare = coursePrice.multiply(BigDecimal.valueOf(0.9));
+                        teacherRevenue = teacherRevenue.add(teacherShare);
+                        validEnrollments++;
+
+                        // Get student profile information
+                        ProfileResponse studentProfile = profileClient.getUserById(enrollment.getStudentId(), token);
+                        String studentName = studentProfile.getFirstName() + " " + studentProfile.getLastName();
+
+                        // Add enrollment details with course name and student name
+                        enrollmentDetails.add(EnrollmentRevenueDetail.builder()
+                            .userId(enrollment.getStudentId())
+                            .courseId(enrollment.getCourseId())
+                            .courseName(course.getName())
+                            .studentName(studentName)
+                            .coursePrice(coursePrice)
+                            .teacherRevenue(teacherShare)
+                            .platformRevenue(platformShare)
+                            .enrollmentDate(enrollment.getEnrollmentDate())
+                            .build());
+                    } else {
+                        log.warn("Course not found or has no price for courseId: {}", enrollment.getCourseId());
+                    }
+                } catch (Exception e) {
+                    log.error("Error getting course info for courseId {}: {}", enrollment.getCourseId(), e.getMessage());
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalRevenue", totalRevenue);
+            result.put("platformRevenue", platformRevenue);
+            result.put("teacherRevenue", teacherRevenue);
+            result.put("totalEnrollments", enrollments.size());
+            result.put("validEnrollments", validEnrollments);
+            result.put("period", days != null ? days + " days" : "1 year");
+            result.put("enrollmentDetails", enrollmentDetails);
+
+            return result;
+        } catch (Exception e) {
+            log.error("Error calculating total revenue: {}", e.getMessage());
+            throw new RuntimeException("Failed to calculate total revenue", e);
+        }
+    }
+
+    public Map<String, Object> getInstructorRevenue(String userId, Integer days) {
+        try {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            String token = "";
+            if (authentication instanceof JwtAuthenticationToken) {
+                JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
+                token = "Bearer " + jwtAuth.getToken().getTokenValue();
+            } else {
+                throw new RuntimeException("Token không hợp lệ");
+            }
+
+            LocalDateTime startDate = days != null ? 
+                LocalDateTime.now().minusDays(days) : 
+                LocalDateTime.now().minusYears(1);
+
+            List<Enrollment> allEnrollments = enrollmentRepository.findByEnrollmentDateAfter(startDate);
+            BigDecimal totalRevenue = BigDecimal.ZERO;
+            int totalEnrollments = 0;
+            List<EnrollmentRevenueDetail> enrollmentDetails = new ArrayList<>();
+
+            for (Enrollment enrollment : allEnrollments) {
+                try {
+                    CourseResponse course = courseClient.getCourseById(enrollment.getCourseId(), token);
+                    if (course != null && course.getPrice() != null && course.getTeacherId().equals(userId)) {
+                        BigDecimal coursePrice = course.getPrice();
+                        BigDecimal teacherShare = coursePrice.multiply(BigDecimal.valueOf(0.9));
+                        totalRevenue = totalRevenue.add(teacherShare);
+                        totalEnrollments++;
+
+                        // Get student profile information
+                        ProfileResponse studentProfile = profileClient.getUserById(enrollment.getStudentId(), token);
+                        String studentName = studentProfile.getFirstName() + " " + studentProfile.getLastName();
+
+                        // Add enrollment details with course name and student name
+                        enrollmentDetails.add(EnrollmentRevenueDetail.builder()
+                            .userId(enrollment.getStudentId())
+                            .courseId(enrollment.getCourseId())
+                            .courseName(course.getName())
+                            .studentName(studentName)
+                            .coursePrice(coursePrice)
+                            .teacherRevenue(teacherShare)
+                            .platformRevenue(coursePrice.multiply(BigDecimal.valueOf(0.1)))
+                            .enrollmentDate(enrollment.getEnrollmentDate())
+                            .build());
+                    }
+                } catch (Exception e) {
+                    log.error("Error getting course info for courseId {}: {}", enrollment.getCourseId(), e.getMessage());
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalRevenue", totalRevenue);
+            result.put("totalEnrollments", totalEnrollments);
+            result.put("period", days != null ? days + " days" : "1 year");
+            result.put("enrollmentDetails", enrollmentDetails);
+
+            return result;
+        } catch (Exception e) {
+            log.error("Error calculating instructor revenue: {}", e.getMessage());
+            throw new RuntimeException("Failed to calculate instructor revenue", e);
         }
     }
 
