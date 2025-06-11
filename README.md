@@ -25,7 +25,7 @@ The platform is built using a microservices architecture with the following comp
 - **Assignment Service**: Assignment creation and submission
 - **Exam Service**: Exam management and results
 - **Chat Service**: Real-time messaging
-- **AI Service**: Intelligent learning features
+- **AI Service**: Intelligent learning features(RAG)
 - **Blog Service**: Content management
 - **Notification Service**: Event notifications
 - **Enrollment Service**: Course registration
@@ -40,6 +40,29 @@ The platform is built using a microservices architecture with the following comp
 - **Containerization**: Docker
 - **CI/CD**: GitHub Actions
 - **Monitoring**: Prometheus, Grafana
+
+## 🤖 RAG Model Implementation
+
+The project implements a Retrieval-Augmented Generation (RAG) model to enhance the learning experience:
+
+### Components
+- **Vector Database**: Stores embeddings of course content, assignments, and learning materials
+- **Embedding Model**: Converts text content into vector representations
+- **LLM Integration**: Uses large language models for intelligent responses
+- **Knowledge Base**: Maintains a structured repository of educational content
+
+### Features
+- **Smart Content Search**: Semantic search across course materials
+- **Personalized Learning**: Content recommendations based on student progress
+- **Content Analysis**: Automated analysis of assignments and submissions
+- **Learning Path Optimization**: Dynamic course content organization
+
+### Implementation Details
+- **Service Architecture**: Dedicated AI service for RAG operations
+- **Data Processing**: Automated content indexing and embedding generation
+- **Real-time Updates**: Continuous learning from new course content
+- **Context Management**: Efficient retrieval of relevant information
+- **Response Generation**: Context-aware answer generation
 
 ## 🚀 Getting Started
 
@@ -117,7 +140,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Authors
 
-- Your Name - Initial work
 
 ## 🙏 Acknowledgments
 
